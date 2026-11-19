@@ -1,0 +1,121 @@
+# Regression cases for the equity benchmark agent.
+#
+# One entry per reported failure. Operations can add these without touching
+# Python. `severity: high` blocks a release.
+#
+# Fields:
+#   holding          what the upstream pipeline knows about the asset
+#                    exposure_currency / exposure_region are the look-through
+#                    answer: what the asset is economically exposed to, which is
+#                    not necessarily its valuation currency.
+#   forbidden        ids that must never appear in the answer
+#   required_any     at least `min_peers` of these must appear
+#   reported_output  what was actually returned when the bug was raised
+#   prefix           risk_rationale_prefix the rationale must begin with
+
+- id: REG-0001
+  opened: 2026-11-14
+  reporter: ops-hk
+  severity: high
+  complaint: >
+    Benchmark for NVIDIA returned Salesforce and Adobe as peer references.
+    Both are enterprise software, not semiconductor exposure.
+  holding:
+    ticker: EQ_NVDA
+    valuation_currency: USD
+  forbidden: [EQ_CRM, EQ_ADBE, EQ_ORCL, EQ_MSFT, ETF_IGV]
+  required_any: [EQ_AMD, EQ_TSM, EQ_AVGO, EQ_INTC, EQ_QCOM, EQ_MU, EQ_ASML,
+                 IDX_SOX, ETF_SMH, ETF_SOXX]
+  min_peers: 2
+  reported_output: [EQ_CRM, EQ_ADBE, IDX_NDX]
+
+- id: REG-0002
+  opened: 2026-11-14
+  reporter: advisory-desk
+  severity: high
+  complaint: >
+    US-domiciled semiconductor holding settled in HKD was benchmarked to the
+    Hang Seng Index. The settlement currency was read as geography.
+  holding:
+    ticker: EQ_NVDA
+    valuation_currency: HKD
+    exposure_currency: USD
+    exposure_region: United States
+    exposure_basis: >
+      US issuer, US-listed, revenue base predominantly North America; HKD is the
+      settlement wrapper only.
+  forbidden: [IDX_HSI, ETF_EWH, IDX_SGX, CASH_SGD, CASH_USD]
+  required_any: [EQ_AMD, EQ_TSM, EQ_AVGO, EQ_INTC, EQ_QCOM, EQ_MU, EQ_ASML,
+                 IDX_SOX, ETF_SMH, ETF_SOXX]
+  min_peers: 2
+  reported_output: [IDX_HSI, ETF_EWH, CASH_SGD]
+
+- id: REG-0003
+  opened: 2026-11-15
+  reporter: advisory-desk
+  severity: high
+  complaint: >
+    Japan semiconductor equipment holding reported in USD was benchmarked only
+    against US indices. The system avoided the Japan benchmark because the
+    statement currency was USD.
+  holding:
+    ticker: EQ_TEL
+    name: Tokyo Electron Limited
+    sector: Information Technology
+    industry: Semiconductor Equipment
+    region: Japan
+    valuation_currency: USD
+    exposure_currency: JPY
+    exposure_region: Japan
+    exposure_basis: >
+      Japanese issuer and Japanese revenue base; USD is the reporting currency
+      of the mandate, not the exposure.
+  forbidden: [CASH_USD, ETF_HYG, IDX_UST_10Y]
+  required_any: [IDX_JP_SEMI, EQ_ASML, IDX_SOX, ETF_SMH]
+  min_peers: 1
+  reported_output: [IDX_SPX, ETF_SPY, ETF_QQQ]
+
+- id: REG-0004
+  opened: 2026-11-16
+  reporter: ops-hk
+  severity: medium
+  complaint: >
+    A cash position was offered as one of three benchmarks for an equity
+    holding, blending a liquidity exposure into the equity geography.
+  holding:
+    ticker: EQ_KO
+    valuation_currency: USD
+  forbidden: [CASH_SGD, CASH_USD, ETF_TLT, IDX_UST_10Y, ETF_HYG, ETF_LQD]
+  required_any: [EQ_PEP, EQ_PG, ETF_XLP]
+  min_peers: 1
+  reported_output: [CASH_SGD, ETF_TLT, IDX_SPX]
+
+- id: REG-0005
+  opened: 2026-11-16
+  reporter: reviewer
+  severity: medium
+  complaint: >
+    Payments network benchmarked to a diversified bank. Both are Financials, but
+    a card network has no balance sheet or deposit spread economics.
+  holding:
+    ticker: EQ_V
+    valuation_currency: USD
+  forbidden: [EQ_JPM, EQ_BAC]
+  required_any: [EQ_MA, ETF_XLF]
+  min_peers: 1
+  reported_output: [EQ_JPM, EQ_BAC, ETF_XLF]
+
+- id: REG-0006
+  opened: 2026-11-17
+  reporter: reviewer
+  severity: high
+  complaint: >
+    All three options were funds tracking the same semiconductor exposure. That
+    is one option presented three times, not a three-way comparison.
+  holding:
+    ticker: EQ_NVDA
+    valuation_currency: USD
+  forbidden: [EQ_CRM, ETF_IGV]
+  required_any: [EQ_AMD, EQ_TSM, EQ_AVGO, EQ_MU, EQ_QCOM]
+  min_peers: 1
+  reported_output: [IDX_SOX, ETF_SMH, ETF_SOXX]

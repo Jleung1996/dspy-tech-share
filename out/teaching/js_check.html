@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JavaScript check</title>
+<style>
+  body{margin:0;font:16px/1.6 "Segoe UI",system-ui,-apple-system,sans-serif;
+       background:#fbfcfe;color:#101828;display:flex;align-items:center;
+       justify-content:center;min-height:100vh;padding:24px}
+  .box{max-width:640px;width:100%;background:#fff;border:1px solid #e3e7ef;
+       border-radius:16px;padding:30px 34px;box-shadow:0 4px 20px rgba(16,24,40,.06)}
+  h1{font-size:15px;text-transform:uppercase;letter-spacing:.12em;color:#5b6478;
+     margin:0 0 14px;font-weight:700}
+  #state{font-size:34px;font-weight:800;letter-spacing:-.02em;margin:0 0 6px;line-height:1.1}
+  #sub{color:#5b6478;margin:0 0 22px;font-size:15px}
+  dl{display:grid;grid-template-columns:150px 1fr;gap:8px 16px;margin:0;
+     font-size:13.5px;border-top:1px solid #e3e7ef;padding-top:18px}
+  dt{color:#5b6478}
+  dd{margin:0;font-family:"Cascadia Code",ui-monospace,Menlo,Consolas,monospace;
+     font-size:12px;word-break:break-word;color:#26355c}
+  .ok{color:#0b7a5c}.bad{color:#b42318}
+  .advice{margin-top:22px;background:#fffbeb;border:1px solid #f5e6b8;border-radius:10px;
+          padding:14px 16px;font-size:13.5px;color:#6b5a1e;display:none}
+  .advice.show{display:block}
+  .foot{margin-top:20px;font-size:12.5px;color:#98a1b6}
+</style></head>
+<body>
+<div class="box">
+  <h1>JavaScript check</h1>
+  <p id="state" class="bad">JavaScript is blocked</p>
+  <p id="sub">The script that fills this page never ran.</p>
+
+  <dl>
+    <dt>Browser</dt><dd id="ua">not reported (script did not run)</dd>
+    <dt>Opened from</dt><dd id="proto">unknown</dd>
+    <dt>Details element</dt><dd id="details">unknown</dd>
+    <dt>Local storage</dt><dd id="storage">not tested</dd>
+  </dl>
+
+  <div class="advice" id="advice">
+    <b>If this stays red, use the static deck instead.</b> <code>deck_nojs.html</code>
+    needs no script at all. If you must run the interactive one: save the file to disk first
+    (do not open it from an email preview), then right-click &rarr; Open with &rarr; Edge or Chrome.
+    In Edge, check <code>edge://settings</code> and that the page is not in IE mode; in Chrome check
+    <code>chrome://settings/content/javascript</code>.
+  </div>
+
+  <p class="foot">This page contains no network calls and no external files. Green means any
+  local .html file on this machine will run its scripts.</p>
+</div>
+
+<noscript>
+  <style>
+    #advice{display:block!important}
+    #state{color:#b42318!important}
+  </style>
+</noscript>
+
+<script>
+(function () {
+  var ok = true;
+  document.getElementById("state").textContent = "JavaScript is running";
+  document.getElementById("state").className = "ok";
+  document.getElementById("sub").textContent =
+    "Any local .html file on this machine will run its scripts.";
+
+  document.getElementById("ua").textContent = navigator.userAgent;
+
+  var proto = location.protocol === "file:" ? "a local file (file://)" : location.protocol;
+  document.getElementById("proto").textContent = proto;
+
+  // <details> is what the static deck relies on, and it needs no script.
+  var d = document.createElement("details");
+  document.getElementById("details").textContent =
+    (typeof d.open === "boolean") ? "supported (open/close works)" : "NOT supported";
+
+  try {
+    localStorage.setItem("__t", "1");
+    localStorage.removeItem("__t");
+    document.getElementById("storage").textContent = "available";
+  } catch (e) {
+    document.getElementById("storage").textContent =
+      "blocked (" + (e && e.name ? e.name : "error") + ") - not needed by the deck";
+  }
+})();
+</script>
+</body></html>

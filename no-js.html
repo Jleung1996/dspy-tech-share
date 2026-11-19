@@ -1,0 +1,1482 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DSPy tech share (static, no JavaScript)</title>
+<style>
+:root{
+  --ink:#101828; --muted:#5b6478; --line:#e3e7ef; --bg:#fbfcfe; --panel:#ffffff;
+  --accent:#2f5bea; --accent-2:#0f9d76; --warn:#c2410c; --bad:#b42318;
+  --code-bg:#0f1526; --code-ink:#d7dcea; --add:#0f7a4d; --del:#b42318;
+  --mono:"Cascadia Code",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font:16px/1.55 "Segoe UI",system-ui,-apple-system,Inter,sans-serif;
+  overflow:hidden;
+}
+.deck{height:100%;position:relative}
+.slide{
+  position:absolute; inset:0; padding:46px 60px 84px;
+  opacity:0; transform:translateX(28px) scale(.995);
+  transition:opacity .45s ease, transform .45s cubic-bezier(.2,.8,.2,1);
+  pointer-events:none; overflow-y:auto;
+}
+.slide.active{opacity:1;transform:none;pointer-events:auto}
+.slide.leaving{transform:translateX(-28px) scale(.995)}
+.eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-size:44px;line-height:1.1;margin:10px 0 6px;letter-spacing:-.02em}
+h2{font-size:16px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:30px 0 12px}
+.lede{font-size:20.5px;color:var(--muted);max-width:74ch;margin:0 0 8px}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;
+  box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.card h3{margin:0 0 6px;font-size:16px}
+.card p{margin:0;color:var(--muted);font-size:14px}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;
+  background:rgba(47,91,234,.1);color:var(--accent)}
+.pill.g{background:rgba(15,157,118,.12);color:var(--accent-2)}
+.pill.r{background:rgba(180,35,24,.1);color:var(--bad)}
+code,.mono{font-family:var(--mono)}
+.diagram{display:flex;align-items:center;justify-content:center;gap:0;margin:26px 0 10px}
+.node{background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;
+  min-width:132px;text-align:center;position:relative;transition:.3s}
+.node .n{font-weight:700;font-size:14px}
+.node .d{font-size:11px;color:var(--muted);margin-top:2px}
+.node.on{border-color:var(--accent);box-shadow:0 0 0 4px rgba(47,91,234,.12);transform:translateY(-3px)}
+.arrow{width:46px;height:2px;background:var(--line);position:relative;flex:0 0 auto}
+.arrow::after{content:"";position:absolute;right:-1px;top:-3px;border:4px solid transparent;border-left-color:var(--line)}
+.arrow .flow{position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left;
+  transition:transform .6s ease}
+.arrow.lit .flow{transform:scaleX(1)}
+.arrow.lit::after{border-left-color:var(--accent)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+td.num{font-variant-numeric:tabular-nums;font-weight:600}
+.bar{height:8px;border-radius:5px;background:var(--line);overflow:hidden}
+.bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  width:0;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.split{display:flex;height:38px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.split > div{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;
+  width:0;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.split .mech{background:linear-gradient(90deg,#2f5bea,#4f7ef7)}
+.split .opt{background:linear-gradient(90deg,#0f9d76,#25c295)}
+.nav{position:fixed;left:0;right:0;bottom:0;height:56px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 60px;background:linear-gradient(to top,var(--bg) 60%,transparent)}
+.dots{display:flex;gap:7px}
+.dot{width:30px;height:30px;border-radius:9px;background:#fff;border:1px solid var(--line);color:var(--muted);cursor:pointer;transition:.2s;font-family:inherit;font-size:12.5px;font-weight:700;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.dot:hover{border-color:var(--accent);color:var(--accent)}
+.dot.on{background:var(--accent);border-color:var(--accent);color:#fff;transform:none}
+.hint{font-size:12px;color:var(--muted)}
+/* prompt / diff viewer */
+.viewer{display:grid;grid-template-columns:230px 1fr;gap:20px;align-items:start}
+.vlist{display:flex;flex-direction:column;gap:6px;max-height:62vh;overflow:auto;padding-right:4px}
+.vitem{border:1px solid var(--line);border-radius:10px;padding:9px 11px;cursor:pointer;background:var(--panel);
+  transition:.2s;text-align:left;font:inherit;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.vitem:hover{border-color:#c8d2e6;transform:translateX(2px)}
+.vitem.on{border-color:var(--accent);background:rgba(47,91,234,.05);box-shadow:0 0 0 3px rgba(47,91,234,.08)}
+.vitem .lbl{font-weight:700;font-size:13px}
+.vitem .sc{font-variant-numeric:tabular-nums;font-size:12px;color:var(--muted)}
+.vitem .sc.up{color:var(--add);font-weight:700}
+.pane{min-height:62vh}
+.panehead{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.code{background:var(--code-bg);color:var(--code-ink);border-radius:12px;padding:16px 18px;
+  font-family:var(--mono);font-size:12.5px;line-height:1.62;overflow:auto;max-height:52vh;white-space:pre-wrap}
+.dl{display:block;opacity:0;animation:fin .32s forwards}
+.dl.add{color:#7ee2b0}.dl.del{color:#ff9b8f}.dl.ctx{color:#8b95ad}.dl.hunk{color:#6d7ba0}
+.dl.add::before{content:"+ ";color:#3fae7d}
+.dl.del::before{content:"- ";color:#e06a5a}
+.dl.ctx::before{content:"  "}
+@keyframes fin{to{opacity:1}}
+.commit{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;
+  padding:10px 14px;background:var(--panel);font-size:13px;color:var(--muted);margin-bottom:12px}
+.commit b{color:var(--ink)}
+.spark{display:flex;align-items:flex-end;gap:4px;height:64px;margin-top:8px}
+.spark div{flex:1;background:linear-gradient(180deg,var(--accent),#9db4f8);border-radius:3px 3px 0 0;
+  height:0;transition:height .8s cubic-bezier(.2,.8,.2,1)}
+.note{font-size:13px;color:var(--muted);border-left:2px solid var(--line);padding-left:12px;margin-top:14px}
+.big{font-size:54px;font-weight:800;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.kv{display:flex;gap:26px;flex-wrap:wrap;margin-top:6px}
+.kv div{min-width:110px}
+.kv .k{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.kv .v{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+.tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:#eef2fb;color:var(--accent)}
+/* toolset chips + lifecycle */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border-radius:6px;
+  background:#f1f4fb;color:#26355c;border:1px solid #e0e6f4;transition:.18s;cursor:default}
+.chip:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-1px)}
+.chip.hot{background:rgba(15,157,118,.12);color:#0b6b51;border-color:rgba(15,157,118,.3)}
+.flowline{display:flex;align-items:stretch;gap:0;margin:18px 0 6px;flex-wrap:wrap}
+.step{flex:1 1 0;min-width:150px;background:var(--panel);border:1.5px solid var(--line);
+  border-radius:10px;padding:11px 13px;position:relative}
+.step + .arrow2{}
+.step .t{font-weight:700;font-size:13px}
+.step .s{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+.arrow2{flex:0 0 26px;align-self:center;height:2px;background:var(--line);position:relative}
+.arrow2::after{content:"";position:absolute;right:-1px;top:-3px;border:4px solid transparent;border-left-color:var(--line)}
+.howto{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:12px}
+.howto .card h3{display:flex;align-items:center;font-size:15px}
+.spec{font-size:12.5px;color:var(--muted);background:#f7f9fd;border:1px dashed var(--line);
+  border-radius:10px;padding:12px 16px;margin-top:16px}
+.spec b{color:var(--ink)}
+.section{scroll-margin-top:10px}
+.scrolltip{position:sticky;bottom:0;text-align:center;font-size:12px;color:var(--muted);
+  padding:8px 0;background:linear-gradient(to top,var(--bg) 55%,transparent);pointer-events:none}
+/* newcomer-friendly blocks */
+.node .tech{font-size:10px;color:#98a1b6;font-family:var(--mono);margin-top:4px}
+.analogy{background:linear-gradient(90deg,rgba(47,91,234,.06),rgba(15,157,118,.06));
+  border:1px solid #dfe6f6;border-radius:12px;padding:16px 20px;margin:18px 0;font-size:15px}
+.analogy b{color:var(--ink)}
+.caps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+.cap{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 17px;
+  transition:.2s}
+.cap:hover{border-color:#c3cfeb;box-shadow:0 4px 14px rgba(16,24,40,.06);transform:translateY(-2px)}
+.cap-t{font-weight:800;font-size:15.5px;letter-spacing:-.01em}
+.cap-d{font-size:13.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+.cap-a{font-family:var(--mono);font-size:11px;color:#9aa4bb;margin-top:9px}
+.plain{font-size:16.5px;color:var(--muted);max-width:80ch}
+.bigq{font-size:22px;font-weight:700;line-height:1.35;max-width:60ch;margin:6px 0 14px}
+.bigq em{color:var(--accent);font-style:normal}
+/* ---- graphics-first blocks ---- */
+.ic{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.ic.lg{width:30px;height:30px;stroke-width:1.5}
+.node .ic{margin:0 auto 6px;color:var(--accent);display:block}
+.node.on .ic{color:var(--accent-2)}
+.ba{display:grid;grid-template-columns:1fr 40px 1fr;align-items:stretch;margin:18px 0 6px}
+.ba-col{border:1px solid var(--line);border-radius:14px;padding:16px 18px;background:var(--panel)}
+.ba-col.bad{background:#fdfbfb;border-color:#f2dedb}
+.ba-col.good{background:#f8fdfb;border-color:#d3eee2}
+.ba-h{font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;font-weight:800;margin-bottom:10px}
+.ba-col.bad .ba-h{color:var(--bad)}
+.ba-col.good .ba-h{color:var(--accent-2)}
+.pv{display:flex;justify-content:space-between;align-items:center;padding:7px 11px;border-radius:8px;
+  background:#fff;border:1px solid var(--line);margin-bottom:7px;font-family:var(--mono);font-size:12.5px}
+.pv b{font-weight:800}
+.pv b.q{color:#c2c8d6}
+.pv b.s{color:var(--muted);font-variant-numeric:tabular-nums}
+.pv.win{border-color:var(--accent-2);background:#effaf5;box-shadow:0 0 0 3px rgba(15,157,118,.10)}
+.pv.win b.s{color:var(--add)}
+.ba-f{font-size:12.5px;color:var(--muted);margin-top:9px;text-align:center}
+.ba-vs{display:flex;align-items:center;justify-content:center;color:#c2c8d6;font-weight:800;font-size:11px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 12px;
+  text-align:center;transition:.2s;cursor:default}
+.tile:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 6px 18px rgba(16,24,40,.08)}
+.tile .ic{color:#5b6b8f;margin:0 auto 8px;display:block;transition:.2s}
+.tile:hover .ic{color:var(--accent)}
+.tl{font-weight:700;font-size:13.5px;line-height:1.3}
+.tk{font-family:var(--mono);font-size:10px;color:#a7afc2;margin-top:5px}
+.trade{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.trade .card{display:flex;gap:12px;align-items:flex-start}
+.trade .ic{color:var(--accent-2);margin-top:1px}
+.trade .no .ic{color:var(--bad)}
+.trade p{margin:0;font-size:13.5px}
+.hintline{font-size:12.5px;color:#98a1b6;text-align:center;margin-top:10px}
+.tile{cursor:pointer}
+.tile::after{content:"i";position:absolute;top:7px;right:9px;width:14px;height:14px;border-radius:50%;
+  background:#eef2fb;color:#8794b4;font-size:9px;font-weight:800;line-height:14px;text-align:center;
+  opacity:.75}
+.tile:hover::after{background:var(--accent);color:#fff}
+.modal{position:fixed;inset:0;background:rgba(12,18,32,.55);display:none;z-index:50;
+  padding:40px 24px;overflow:auto}
+.modal.on{display:block}
+.sheet{max-width:900px;margin:0 auto;background:#fff;border-radius:16px;padding:26px 30px 30px;
+  box-shadow:0 24px 70px rgba(10,16,32,.3)}
+.sheet-top{display:flex;align-items:flex-start;gap:14px;border-bottom:1px solid var(--line);padding-bottom:14px}
+.sheet-top .ic{color:var(--accent);margin-top:3px}
+.sheet h2{margin:0;font-size:22px;letter-spacing:-.01em;color:var(--ink)}
+.sheet .api{font-family:var(--mono);font-size:12px;color:#8794b4;margin-top:3px}
+.sheet .close{margin-left:auto;border:0;background:#f1f4fb;width:30px;height:30px;border-radius:8px;
+  cursor:pointer;font-size:16px;color:#5b6478;line-height:1}
+.sheet .close:hover{background:#e6ecf9;color:var(--ink)}
+.sheet h4{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:18px 0 6px}
+.sheet p{margin:0;font-size:14px;color:#39445c;line-height:1.55}
+.sheet pre{background:var(--code-bg);color:var(--code-ink);border-radius:10px;padding:14px 16px;
+  font-family:var(--mono);font-size:12px;line-height:1.6;overflow:auto;margin:0}
+.limitbox{background:#fffbeb;border:1px solid #f5e6b8;border-radius:10px;padding:12px 14px;
+  font-size:13.5px;color:#6b5a1e;line-height:1.5;display:flex;gap:10px}
+.limitbox .ic{color:#b58a12;margin-top:1px;flex:0 0 auto}
+.mtag{font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:5px;font-weight:700}
+.mtag.schema{background:#e8effd;color:#2f5bea}
+.mtag.validator{background:#e9f8f2;color:#0b7a5c}
+.mtag.python{background:#fdf1e6;color:#a35a10}
+.tn{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.tn.good{color:#0b7a5c}
+.tn.mid{color:#a3610f}
+.tn.bad{color:#b42318}
+.tcaption{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+table.rules td{font-size:12.5px;vertical-align:top;padding:6px 8px}
+table.rules td:first-child{white-space:nowrap}
+ol.optrules{margin:0;padding-left:20px;font-size:13px;color:#39445c;line-height:1.6}
+ol.optrules li{margin-bottom:4px}
+.code.fullprompt{max-height:44vh;margin-top:0}
+.decide{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.dcol{border-radius:12px;padding:18px 22px}
+.dcol.yes{background:#f3fbf7;border:1px solid #d3eee2}
+.dcol.no{background:#fdf7f5;border:1px solid #f6ded8}
+.dcol h3{margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:9px}
+.dcol h3 .ic{width:20px;height:20px}
+.dcol.yes h3{color:var(--accent-2)}
+.dcol.no h3{color:var(--bad)}
+.dcol ul{margin:0;padding:0;list-style:none}
+.dcol li{display:flex;gap:10px;font-size:15px;line-height:1.45;margin-bottom:11px;color:#39445c}
+.dcol li:last-child{margin-bottom:0}
+.dcol li .ic{flex:0 0 auto;width:16px;height:16px;margin-top:3px;stroke-width:2.6}
+.dcol.yes li .ic{color:var(--accent-2)}
+.dcol.no li .ic{color:var(--bad)}
+
+.tradegrid{display:flex;flex-direction:column;gap:10px;margin:20px 0 4px}
+.trow{display:grid;grid-template-columns:1fr 46px 1fr;align-items:center;gap:8px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 22px;
+  transition:.2s}
+.trow:hover{border-color:#c3cfeb;transform:translateX(3px)}
+.tleft{font-size:17px;color:#949cb0;line-height:1.3}
+.tarrow{text-align:center;color:var(--accent);font-size:19px;font-weight:800;line-height:1}
+.tright{font-size:17px;font-weight:700;color:var(--ink);line-height:1.3}
+.tradecards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+.tcard{border-radius:12px;padding:17px 20px}
+.tcard.buy{background:#f3fbf7;border:1px solid #d3eee2}
+.tcard.cost{background:#fffaf2;border:1px solid #f5e6c8}
+.tcard h3{margin:0 0 5px;font-size:15px}
+.tcard p{margin:0;font-size:14.5px;line-height:1.5}
+
+.tradetab{border-collapse:collapse;width:100%;font-size:13.5px;margin:14px 0 4px}
+.tradetab th,.tradetab td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);
+  vertical-align:top;line-height:1.45}
+.tradetab th{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
+  background:#f8fafd}
+.tradetab td:first-child{color:var(--muted);white-space:nowrap;font-size:12.5px}
+.tradetab tr td:nth-child(2){color:var(--muted)}
+.tradetab tr td:nth-child(3){font-weight:500}
+.limits{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
+.lim{display:flex;gap:11px;background:var(--panel);border:1px solid var(--line);
+  border-left:3px solid #e0b93c;border-radius:10px;padding:13px 15px}
+.lim .ic{color:#b58a12;margin-top:1px}
+.lim b{font-size:13.5px;display:block;margin-bottom:2px}
+.lim span{font-size:12.5px;color:var(--muted);line-height:1.45}
+
+
+/* ---- score calculator ---- */
+.mapto{font-family:var(--mono);font-size:11px;color:#0b7a5c;background:#eefaf5;
+  border:1px solid #d6efe4;border-radius:6px;padding:3px 8px;display:inline-block}
+.calcbox{display:grid;grid-template-columns:1fr 320px;gap:18px;margin-top:14px;align-items:start}
+.pickgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pick{border:1.5px solid var(--line);border-radius:10px;padding:10px 11px;cursor:pointer;
+  background:#fff;transition:.15s;text-align:left;font:inherit}
+.pick:hover{border-color:#c3cfeb;transform:translateY(-1px)}
+.pick .pid{font-family:var(--mono);font-size:11.5px;font-weight:700;color:#26355c}
+.pick .pname{font-size:11px;color:var(--muted);margin-top:2px;display:block;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick.sel{border-color:var(--accent);box-shadow:0 0 0 3px rgba(47,91,234,.10);background:#f7f9ff}
+.pick.t-peer{border-left:3px solid #0f9d76}
+.pick.t-adjacent{border-left:3px solid #d99a1e}
+.pick.t-wrong{border-left:3px solid #b42318}
+.pick.t-neutral{border-left:3px solid #c2c8d6}
+.picknote{font-size:12.5px;color:var(--muted);margin-top:10px;min-height:18px}
+.calcright{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;text-align:center}
+.scorelabel{font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.scorenum{font-size:46px;font-weight:800;letter-spacing:-.03em;line-height:1.1;
+  font-variant-numeric:tabular-nums;color:var(--ink);transition:color .2s}
+.scorebreak{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.7}
+.formula{font-size:11px;color:#98a1b6;margin-top:12px;border-top:1px solid var(--line);padding-top:10px;line-height:1.5}
+/* ---- optimiser stepper ---- */
+.optbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:16px 18px;margin-top:14px}
+.optcontrols{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.obtn{border:0;background:var(--accent);color:#fff;font:inherit;font-weight:700;font-size:13px;
+  padding:8px 15px;border-radius:9px;cursor:pointer;transition:.15s}
+.obtn:hover{background:#2450d8}
+.obtn.ghost{background:#f1f4fb;color:#5b6478}
+.obtn.ghost:hover{background:#e6ecf9}
+.obtn:disabled{opacity:.45;cursor:default}
+.opthint{font-size:12.5px;color:var(--muted)}
+.optbars{display:flex;align-items:flex-end;gap:6px;height:120px}
+.obar{flex:1;position:relative;border-radius:5px 5px 0 0;background:#e3e9f6;height:0;
+  transition:height .35s cubic-bezier(.2,.8,.2,1), background .2s, box-shadow .2s;cursor:pointer}
+.obar .olabel{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:10px;
+  color:var(--muted);font-family:var(--mono)}
+.obar.kept{background:linear-gradient(180deg,#25c295,#0f9d76)}
+.obar.dropped{background:#e8b4ae}
+.obar.baseline{background:linear-gradient(180deg,#7f9bf5,#2f5bea)}
+.obar.on{box-shadow:0 0 0 3px rgba(47,91,234,.22)}
+.optnote{margin-top:32px;font-size:13.5px;color:#39445c;min-height:44px;line-height:1.5;
+  border-top:1px solid var(--line);padding-top:12px}
+.optnote b{color:var(--ink)}
+.fbexample{margin-top:14px;background:#f7f9fd;border:1px dashed var(--line);border-radius:10px;padding:12px 16px}
+.fblabel{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px}
+.fbexample code{font-family:var(--mono);font-size:11.5px;color:#39445c;white-space:pre-wrap;line-height:1.6}
+
+/* ---- anatomy stepper ---- */
+.anabox-wrap{border:1px solid var(--line);border-radius:14px;background:var(--panel);margin-top:14px;overflow:hidden}
+.anatabs{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--line);background:#f8fafd}
+.anatab-btn{border:0;background:transparent;font:inherit;font-size:12.5px;font-weight:700;
+  color:#7b869d;padding:11px 15px;cursor:pointer;border-bottom:2px solid transparent;transition:.15s}
+.anatab-btn:hover{color:var(--ink);background:#eef2fb}
+.anatab-btn.on{color:var(--accent);border-bottom-color:var(--accent);background:#fff}
+/* ---- reflection prompt rendering ---- */
+.pgp{background:#0f1526;border-radius:10px;padding:14px 16px;margin-top:10px;
+  font-family:var(--mono);font-size:11.5px;line-height:1.6;color:#cfd6e8}
+.pgsec{margin-bottom:13px}
+.pgsec:last-child{margin-bottom:0}
+.pgh{color:#8fb0ff;font-weight:700;margin-bottom:4px}
+.pgdim{color:#8894b0}
+.pgcode{background:#0a0f1c;border:1px solid #1e2942;border-radius:7px;padding:9px 11px;
+  margin:6px 0 0;color:#dfe4f0;font-size:11px;line-height:1.55;white-space:pre-wrap}
+.pgex{background:#0a0f1c;border-left:2px solid #2f5bea;border-radius:0 7px 7px 0;
+  padding:8px 11px;margin-top:8px}
+.pgk{color:#8fb0ff;font-weight:700;margin-bottom:4px}
+.pgrow{color:#cfd6e8;margin-bottom:3px}
+.pgkk{display:inline-block;min-width:104px;color:#8894b0}
+.pgrow code{color:#a8e6c4}
+.pglist{margin:4px 0 0;padding-left:18px;color:#cfd6e8}
+.pglist li{margin-bottom:3px}
+.vsrow{display:grid;grid-template-columns:1fr 40px 1fr;gap:10px;align-items:center;
+  margin-top:14px}
+.vsbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:12px 16px;text-align:center}
+.vsbox.win{background:#f3fbf7;border-color:#c9ecdc}
+.vsk{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
+  margin-bottom:6px;font-weight:700}
+.vsv{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1;color:var(--ink)}
+.vsbox.win .vsv{color:#0b7a5c}
+.vsarrow{text-align:center;color:#b9c0d0;font-size:16px}
+.vsdelta{margin-top:10px;text-align:center;font-family:var(--mono);font-size:13px;
+  font-weight:700;color:#0b7a5c}
+table.cmp td .good{color:#0b7a5c}
+table.cmp td .bad{color:#b4432c}
+
+.anapane{padding:18px 20px}
+.anapane h3{margin:0 0 8px;font-size:16px}
+.anapane p{margin:0;font-size:13.5px;color:#39445c;line-height:1.55}
+.anabox{background:#f7f9fd;border:1px dashed var(--line);border-radius:10px;padding:12px 14px;
+  font-family:var(--mono);font-size:11.5px;line-height:1.75;color:#39445c;margin-top:10px;
+  white-space:pre-wrap;word-break:break-word}
+.anak{display:inline-block;min-width:150px;color:#8794b4;font-weight:700}
+.anaout{background:var(--code-bg);color:#b9f5d8;font-family:var(--mono);font-size:13px;
+  border-radius:9px;padding:11px 15px;margin-top:8px;letter-spacing:.02em}
+.anatwo{display:grid;grid-template-columns:120px 1fr;gap:16px;margin-top:10px;align-items:start}
+.analab{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px}
+.anabig{font-size:38px;font-weight:800;letter-spacing:-.03em;color:var(--warn);font-variant-numeric:tabular-nums;line-height:1}
+.anafb{background:#f7f9fd;border:1px solid var(--line);border-radius:9px;padding:11px 13px;
+  font-family:var(--mono);font-size:11.5px;line-height:1.65;color:#39445c}
+.anacode{background:var(--code-bg);color:var(--code-ink);border-radius:10px;padding:13px 15px;
+  font-family:var(--mono);font-size:11.5px;line-height:1.6;max-height:230px;overflow:auto;
+  white-space:pre-wrap;margin-top:10px}
+table.anatab{margin-top:12px;font-size:13px}
+table.anatab td,table.anatab th{padding:6px 10px}
+table.anatab .keep{color:#0b7a5c;font-weight:700}
+table.anatab .drop{color:var(--muted)}
+
+.mipwrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:16px 18px;margin-top:16px}
+.mipup{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
+.mipcol h4{margin:0 0 8px;font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--muted)}
+.mipitem{font-size:12.5px;color:#39445c;margin-bottom:5px;line-height:1.4}
+.mipitem b{display:inline-block;min-width:28px;color:var(--accent);font-family:var(--mono)}
+.mipctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.mbtn{font:inherit;font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:8px;
+  border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer}
+.mbtn.ghost{background:#fff;color:var(--accent)}
+.mbtn:disabled{opacity:.4;cursor:default}
+.mipstat{font-size:12px;color:var(--muted);margin-left:4px}
+.mipgrid{display:grid;grid-template-columns:74px repeat(3,1fr);gap:6px}
+.miph{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+  text-align:center;padding:2px 0}
+.mipl{font-family:var(--mono);font-size:11.5px;font-weight:700;color:#39445c;
+  display:flex;align-items:center}
+.mcell{border:1px dashed var(--line);border-radius:8px;min-height:42px;display:flex;
+  align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;
+  font-weight:700;color:#c8cedb;background:#fff;transition:.2s}
+.mcell.on{border-style:solid;color:#fff}
+.mcell.on.good{background:#0b7a5c;border-color:#0b7a5c}
+.mcell.on.mid{background:#2f5bea;border-color:#2f5bea}
+.mcell.on.bad{background:#b4432c;border-color:#b4432c}
+.mcell b{display:block;font-size:13px;line-height:1.1}
+.mcell span{display:block;font-size:9.5px;opacity:.9;margin-top:2px;letter-spacing:.02em}
+.mcell.best{outline:3px solid #0b7a5c;outline-offset:2px}
+.mcell.never{border-style:dotted;color:#aab2c2;background:#fafbfd}
+.mipnote{font-size:13px;color:#39445c;margin-top:12px;line-height:1.5;min-height:40px}
+
+/* ---- MIPROv2 flowchart ---- */
+/* loop-back rail: from the decision box up to the trial box */
+.floop{grid-column:1;grid-row:3 / 10;align-self:stretch;margin:26px 0 26px 0;
+  border:2px solid var(--accent);border-right:none;border-radius:12px 0 0 12px;
+  position:relative;pointer-events:none}
+/* ---- GEPA worked example ---- */
+.gepaex{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.exloop{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+.exhead{display:flex;align-items:center;gap:10px;padding:9px 16px;background:#f8fafd;
+  border-bottom:1px solid var(--line);font-size:10px;text-transform:uppercase;
+  letter-spacing:.09em;color:var(--muted);font-weight:700}
+.exhead b{color:var(--accent);font-size:10.5px}
+.exbody{display:grid;grid-template-columns:1fr 1.15fr 1fr}
+.excell{padding:12px 16px;border-right:1px solid #eef0f5;font-size:12.5px;line-height:1.5;
+  color:#39445c}
+.excell:last-child{border-right:none}
+.exlab{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+  margin-bottom:6px;font-weight:700}
+.exscore{font-family:var(--mono);font-size:16px;font-weight:800;color:var(--accent);
+  margin-bottom:5px;line-height:1}
+.exsaid{font-style:italic;color:#5b6478}
+.add-a,.add-b,.add-c{border-radius:3px;padding:0 3px;box-decoration-break:clone;
+  -webkit-box-decoration-break:clone;font-weight:600}
+.add-a{background:#e6f6ee;color:#0b7a5c}
+.add-b{background:#e8eefe;color:#2f5bea}
+.add-c{background:#f4eafc;color:#8443b8}
+.exwrote{color:#39445c}
+.exverdict{padding:8px 16px;font-size:11.5px;font-weight:600;border-top:1px solid #eef0f5}
+.exverdict.acc{background:#f3fbf7;color:#0b7a5c}
+.exverdict.rej{background:#fdf6f4;color:#b4432c}
+.rej{color:#b4432c;text-decoration:line-through;text-decoration-thickness:1px}
+.exscore.worse{color:#b4432c}
+.exres{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  background:#f3fbf7;border:1px solid #c9ecdc;border-radius:12px;padding:14px 18px;
+  font-size:13.5px;color:#0b7a5c;font-weight:700}
+.extest{text-align:right;font-weight:700}
+.extestsub{font-weight:400;font-size:11px;color:#5b6478;display:block;margin-top:2px}
+
+.floop.gepa{grid-row:3 / 14}
+.fc.out{background:#fffaf2;border:1px dashed #e2c98f;color:#6b5a1e}
+.fsrow.dead{color:#aab2c2;font-style:italic}
+.fsrow.dead b{color:#aab2c2;font-style:normal}
+.floop:before{content:"";position:absolute;top:-7px;right:-3px;border:7px solid transparent;
+  border-left-color:var(--accent);border-right:0;border-top:0;border-bottom:0;
+  width:0;height:0}
+.farrt{justify-self:center}
+
+.flowd{display:grid;grid-template-columns:1fr 268px;gap:20px;align-items:start;margin-top:16px}
+.fcol{display:grid;grid-template-columns:34px 1fr;column-gap:12px;width:100%;
+  max-width:540px}
+.fcol > .fc,.fcol > .farrt{grid-column:2}
+.fc{width:100%;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;padding:11px 16px;font-size:13.5px;text-align:center;line-height:1.4}
+.fc.start{background:#f4f8ff;border-color:#cddcff}
+.fc.hot{background:#eef3ff;border-color:#c3d4fb}
+.fc.dec{background:#fffaf2;border-color:#f5e6c8}
+.fc.win{background:#f3fbf7;border-color:#c9ecdc;color:#0b7a5c;font-weight:700}
+.fsub{font-size:11.5px;color:#5b6478;margin-top:5px;font-weight:400}
+.farrt{color:#b0b8ca;font-size:10px;line-height:1.6;padding:1px 0}
+.fside{display:flex;flex-direction:column;gap:12px;padding-top:46px}
+.fsave{background:#fff;border:2px dashed #c3d4fb;border-radius:10px;padding:12px 14px}
+.fstag{font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:700;
+  color:var(--accent);margin-bottom:9px}
+.fsrow{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;
+  padding:6px 9px;border-radius:7px;color:#5b6478;margin-bottom:4px}
+.fsrow b{font-family:var(--mono);font-size:13px;color:#39445c}
+.fsrow.win{background:#e6f6ee;color:#0b7a5c}
+.fsrow.win b{color:#0b7a5c}
+.fsnote{font-size:11.5px;color:var(--muted);line-height:1.5}
+
+/* ---- MIPROv2 story diagram ---- */
+.stemwrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:16px 18px;margin-top:16px}
+.stemsteps{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.ss{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 12px;
+  font-size:12.5px}
+.ss b{color:var(--accent)}
+.sa{color:#b9c0d0;font-size:13px}
+.sloop{margin-left:auto;font-size:11.5px;color:var(--accent);font-weight:700}
+.stgrid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;align-items:center}
+.stgrid .t{display:flex;align-items:center;justify-content:center;height:30px;border-radius:7px;
+  border:1px dashed #cfd6e4;background:#fff;font-family:var(--mono);font-size:11.5px;
+  color:#aab2c2;font-weight:700}
+.stgrid .t.on{background:var(--accent);border:1px solid var(--accent);color:#fff}
+.stgrid .a{text-align:center;color:var(--accent);font-size:14px;line-height:1.1;
+  font-weight:700;padding:3px 0}
+.stgrid .s{text-align:center;font-family:var(--mono);font-size:12px;font-weight:700;
+  padding:6px 0;border-radius:7px;background:#fff;border:1px solid var(--line);color:#5b6478}
+.stgrid .s.best{background:#e6f6ee;border-color:#bfe4d4;color:#0b7a5c}
+.stcap{font-size:13px;color:#39445c;margin:16px 0 0;line-height:1.55}
+.stret{margin-top:12px;font-size:13.5px;font-weight:700;color:#0b7a5c;
+  border-top:1px solid var(--line);padding-top:11px}
+
+/* ---- loop / checkpoint / return diagram ---- */
+.loopd{display:flex;flex-direction:column;margin-top:16px}
+.ldlane{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:13px 18px}
+.ldlane.hot{background:#eef3ff;border-color:#cddcff}
+.ldlane.win{background:#f3fbf7;border-color:#c9ecdc}
+.ldtag{font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:700;
+  color:var(--muted);margin-bottom:10px}
+.ldsteps{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ldstep{flex:1 1 0;min-width:120px;background:#fff;border:1px solid var(--line);
+  border-radius:9px;padding:8px 12px;font-size:12.5px;line-height:1.35;text-align:center}
+.ldarr{flex:0 0 auto;color:#b9c0d0;font-size:13px}
+.ldloop{margin-top:9px;font-size:11.5px;color:var(--accent);font-weight:600;text-align:center}
+.lddown{text-align:center;font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--muted);padding:8px 0}
+.lddown:before{content:"93  "}
+.ldscores{display:flex;gap:10px;flex-wrap:wrap}
+.scrow{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12.5px;
+  background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 12px;flex:1 1 0;
+  min-width:130px}
+.scrow.best{background:#e6f6ee;border-color:#bfe4d4;font-weight:700;color:#0b7a5c}
+.sn{flex:1 1 auto;color:#5b6478}
+.scrow.best .sn{color:#0b7a5c}
+.scrow b{font-size:13.5px}
+.scrow i{font-size:9px;text-transform:uppercase;letter-spacing:.08em;background:#0b7a5c;
+  color:#fff;border-radius:4px;padding:1px 5px;font-style:normal}
+
+/* ---- trial cadence strip ---- */
+.ptime{background:#f8fafd;border:1px solid var(--line);border-radius:12px;
+  padding:12px 16px;margin-top:12px}
+.ptlabel{font-size:12px;color:#5b6478;margin-bottom:9px}
+.ptrow{display:flex;gap:6px;flex-wrap:wrap}
+.pt{display:flex;align-items:center;justify-content:center;width:30px;height:30px;
+  border-radius:7px;border:1px dashed #cfd6e4;background:#fff;color:#aab2c2;
+  font-family:var(--mono);font-size:11.5px;font-style:normal;font-weight:700}
+.pt.on{background:var(--accent);border:1px solid var(--accent);color:#fff}
+.ptlegend{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:10px;
+  font-size:11.5px;color:var(--muted)}
+.sw{width:11px;height:11px;border-radius:3px;border:1px dashed #cfd6e4;background:#fff;
+  display:inline-block}
+.sw.on{background:var(--accent);border:1px solid var(--accent)}
+.ptlegend .sw{margin-left:8px}
+.ptlegend .sw:first-child{margin-left:0}
+
+/* ---- MIPROv2 pipeline + trial log ---- */
+.pipe{display:flex;align-items:stretch;gap:0;margin-top:18px;flex-wrap:wrap}
+.pstage{flex:1 1 0;min-width:132px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:14px 14px 12px;text-align:center}
+.pstage.hot{background:#eef3ff;border-color:#cddcff}
+.pstage.win{background:#f3fbf7;border-color:#c9ecdc}
+.pnum{font-family:var(--mono);font-size:19px;font-weight:800;color:var(--accent);line-height:1}
+.pstage.win .pnum{color:#0b7a5c}
+.ptitle{font-size:11px;text-transform:uppercase;letter-spacing:.09em;font-weight:700;
+  margin:7px 0 5px;color:var(--ink)}
+.pdesc{font-size:11.5px;color:#5b6478;line-height:1.4}
+.parrow{flex:0 0 26px;display:flex;align-items:center;justify-content:center;
+  color:#b9c0d0;font-size:15px}
+.miptoy{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px;margin-top:6px}
+.mipctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.mipcols{display:grid;grid-template-columns:1.45fr 1fr;gap:18px}
+.mipcols h4{margin:0 0 8px;font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--muted)}
+.cprow td{background:#eef3ff;border-top:1px solid #cddcff;border-bottom:1px solid #cddcff;
+  font-size:11.5px;color:#33405c;padding:7px 9px;line-height:1.45}
+.rrow.saved{background:#f4f8ff;border-color:#dbe6ff}
+.rrow.win{background:#e6f6ee;border-color:#bfe4d4;color:#0b7a5c;font-weight:700}
+.testout{margin-top:11px;padding:10px 12px;border-radius:9px;background:#fffaf2;
+  border:1px solid #f5e6c8;font-size:12px;color:#6b5a1e;line-height:1.5}
+.mipout{margin-top:14px}
+table.miptab{font-size:12px;border-collapse:collapse;width:100%}
+table.miptab th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);padding:3px 6px;border-bottom:1px solid var(--line)}
+table.miptab td{padding:5px 6px;border-bottom:1px solid #eef0f5;vertical-align:middle}
+table.miptab td.mono2{font-family:var(--mono);font-size:11.5px;font-weight:700;color:#39445c}
+.chip{display:inline-block;font-family:var(--mono);font-size:10.5px;font-style:normal;
+  border-radius:5px;padding:1px 5px;margin-right:3px;white-space:nowrap}
+.chip.ok{background:#e6f6ee;color:#0b7a5c}
+.chip.no{background:#fdeeea;color:#b4432c}
+.miprank{display:flex;flex-direction:column;gap:3px}
+.rrow{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11.5px;
+  padding:5px 8px;border-radius:7px;color:#5b6478;border:1px solid transparent}
+.rrow.promoted{background:#eef3ff;border-color:#dbe6ff;color:#39445c}
+.rrow.win{background:#e6f6ee;border-color:#bfe4d4;color:#0b7a5c;font-weight:700}
+.rname{flex:1 1 auto}
+.ravg{font-weight:700}
+.rn{font-size:10px;opacity:.65}
+.rfull{font-size:10px;background:#0b7a5c;color:#fff;border-radius:4px;padding:1px 5px}
+.mipnote{font-size:13px;color:#39445c;margin-top:12px;line-height:1.5;min-height:42px;
+  border-top:1px solid var(--line);padding-top:10px}
+
+/* ---- page 4: optimiser mechanics ---- */
+.ovflow{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+.ovlane{border:1px solid var(--line);border-radius:12px;padding:13px 18px 15px;background:var(--panel)}
+.ovlane.train{border-left:4px solid var(--accent)}
+.ovlane.val{border-left:4px solid #0b7a5c;background:#f7fcfa}
+.ovlane.test{border-left:4px solid #b4432c;background:#fdf9f7}
+.ovtag{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:10px}
+.ovrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ovbox{background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 13px;
+  font-size:12.5px;line-height:1.35;text-align:center;flex:1 1 0;min-width:104px}
+.ovbox.hot{background:#eef3ff;border-color:#cddcff;font-weight:700;color:var(--accent)}
+.ova{color:#b9c0d0;font-size:13px;flex:0 0 auto}
+.ovloop{margin-top:10px;font-size:12px;color:var(--accent);font-weight:600;text-align:center}
+.ovlane p{margin:0;font-size:13.5px;color:#39445c;line-height:1.5}
+.mflow{display:flex;flex-direction:column;gap:9px;margin-top:14px}
+.mstep{display:flex;gap:13px;align-items:flex-start;background:var(--panel);
+  border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.mstep>span{flex:0 0 22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.mstep div{font-size:13.5px;line-height:1.5;color:#39445c}
+.mstep code{font-size:12px}
+.ticklist{margin:0;padding-left:18px}
+.ticklist li{font-size:13.5px;line-height:1.5;margin-bottom:8px;color:#39445c}
+.cmp{display:grid;grid-template-columns:1fr 150px 1fr;gap:14px;margin-top:16px;align-items:stretch}
+.cmpcol{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.cmpcol.gepa{background:#f6f9ff;border-color:#d6e2fb}
+.cmpcol h3{margin:0 0 11px;font-size:16px}
+.cmpstep{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 12px;
+  font-size:12.5px;line-height:1.4;margin-bottom:7px;color:#39445c}
+.cmpcol.gepa .cmpstep{border-color:#d6e2fb}
+.cmpfoot{font-size:12px;font-weight:700;color:var(--accent);margin-top:10px;
+  border-top:1px solid var(--line);padding-top:9px;line-height:1.45}
+.cmpmid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.cmpline{width:1px;flex:1;background:var(--line)}
+.cmplabel{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+  text-align:center;line-height:1.5}
+
+/* ---- setup page ---- */
+table.ctab th,table.tier th{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+table.ctab td,table.tier td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.ctab td:first-child{white-space:nowrap}
+.hand{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+.hcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.hcard .hn{font-size:31px;font-weight:800;letter-spacing:-.03em;color:var(--accent);line-height:1}
+.hcard h4{margin:7px 0 4px;font-size:15px}
+.hcard p{margin:0;font-size:13.5px;color:#39445c;line-height:1.45}
+.handdown{text-align:center;margin:12px 0 8px;font-size:11px;text-transform:uppercase;
+  letter-spacing:.11em;color:var(--muted)}
+.handprog{background:#eef3ff;border:1px solid #cddcff;border-radius:12px;padding:14px 20px;
+  display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.handprog b{font-size:15px;color:var(--accent);white-space:nowrap}
+.handprog span{font-family:var(--mono);font-size:12px;color:#39445c;line-height:1.5}
+.tier4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
+.t4{border-radius:12px;padding:14px 16px;border:1px solid var(--line);background:var(--panel)}
+.t4 .tv{font-family:var(--mono);font-size:17px;font-weight:800;line-height:1}
+.t4 h4{margin:6px 0 4px;font-size:14px}
+.t4 p{margin:0;font-size:12.5px;color:#39445c;line-height:1.4}
+.t4.peer{border-color:#bfe4d4;background:#f3fbf7}
+.t4.peer .tv{color:#0b7a5c}
+.t4.adj{border-color:#c9d8f5;background:#f4f8ff}
+.t4.adj .tv{color:#2f5bea}
+.t4.hard{border-color:#f3cfc7;background:#fdf6f4}
+.t4.hard .tv{color:#b4432c}
+.t4.unrel{border-color:#e2e5ec;background:#fafbfd}
+.t4.unrel .tv{color:#8b93a7}
+.fsep{border-top:1px solid rgba(255,255,255,.14);margin:9px 0 6px}
+.fcm{font-family:var(--mono);font-size:12.5px;color:#8b96b5;line-height:1.5}
+.formulabox{background:#0f1526;border-radius:12px;padding:18px 24px;margin-top:14px}
+.fline{display:flex;gap:16px;align-items:baseline;padding:6px 0}
+.fline+.fline{border-top:1px solid rgba(255,255,255,.08)}
+.fk{flex:0 0 78px;font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:#7f8aa8}
+.feq{font-family:var(--mono);font-size:14px;color:#d7dcea}
+.steps4{margin:0;padding-left:20px}
+.steps4 li{font-size:14px;line-height:1.5;margin-bottom:8px;color:#39445c}
+
+/* ---- tier table + weight sensitivity ---- */
+table.tier td{font-size:12.5px;vertical-align:top}
+.tt{font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.tt.peer{background:#e9f8f2;color:#0b7a5c}
+.tt.adj{background:#fdf4e3;color:#a3610f}
+.tt.hard{background:#fdeceb;color:#b42318}
+.tt.unrel{background:#f1f3f7;color:#7b869d}
+.mono2{font-family:var(--mono);font-size:11px;color:#5b6478}
+.wsens{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px}
+.wlab{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.wbtns{display:flex;gap:6px}
+.wbtn{border:1.5px solid var(--line);background:#fff;font:inherit;font-size:12px;font-weight:700;
+  padding:6px 12px;border-radius:8px;cursor:pointer;color:#5b6478;transition:.15s}
+.wbtn:hover{border-color:#c3cfeb}
+.wbtn.on{border-color:var(--accent);color:var(--accent);background:#f5f8ff}
+.wsensout{margin-top:12px;display:flex;align-items:baseline;gap:14px}
+.wsensout .wbig{font-size:34px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.wsensout .wtext{font-size:12.5px;color:var(--muted);line-height:1.4}
+@media print{
+  html,body{overflow:visible;background:#fff}
+  .deck{height:auto}
+  .slide{position:static;opacity:1;transform:none;pointer-events:auto;
+    page-break-after:always;padding:0 0 24px;overflow:visible}
+  .nav,.scrolltip,.modal{display:none!important}
+  .card,.tile,.anabox-wrap{box-shadow:none}
+  .obar{height:60px!important}
+}
+
+/* ---- concepts grid (page 1) ---- */
+.concepts{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0 6px}
+.concept{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:22px 22px 18px;cursor:pointer;transition:.2s;position:relative;min-height:168px;
+  display:flex;flex-direction:column}
+.concept:hover{border-color:var(--accent);transform:translateY(-3px);
+  box-shadow:0 10px 26px rgba(16,24,40,.10)}
+.concept .chead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.concept .ic{color:var(--accent);width:26px;height:26px}
+.concept .cname{font-size:21px;font-weight:800;letter-spacing:-.02em;
+  border-bottom:2px solid var(--ink);padding-bottom:5px;flex:1}
+.concept .cblurb{font-size:15px;color:#39445c;line-height:1.5;flex:1}
+.concept .cmore{margin-top:12px;font-size:11.5px;font-weight:700;color:var(--accent);
+  text-transform:uppercase;letter-spacing:.08em}
+.concept .capi{font-family:var(--mono);font-size:10px;color:#a7afc2;margin-top:6px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chainline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:26px;
+  padding:14px 18px;background:#f7f9fd;border:1px dashed var(--line);border-radius:12px}
+.chainline .ch{font-family:var(--mono);font-size:12px;font-weight:700;background:#fff;
+  border:1px solid var(--line);border-radius:7px;padding:4px 10px;color:#39445c}
+.chainline .ch.hot{background:rgba(47,91,234,.08);border-color:rgba(47,91,234,.35);
+  color:var(--accent)}
+.chainline .car{color:#b9c0d0;font-size:13px}
+.chainline .chm{font-size:12px;color:var(--muted);margin-left:4px}
+/* wider modal for code + output */
+.sheet.wide{max-width:980px}
+.sheet pre.out{background:#0d1b16;color:#a8e6c4;border-radius:10px;padding:13px 16px;
+  font-family:var(--mono);font-size:12px;line-height:1.6;overflow:auto;margin:0}
+.codepair{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sheet .simplenote{font-size:12.5px;color:var(--muted);margin:8px 0 0;line-height:1.5;
+  border-left:2px solid var(--line);padding-left:12px}
+.sheet table.ctab{border-collapse:collapse;width:100%;font-size:12.5px;margin:8px 0 4px}
+.sheet table.ctab th,.sheet table.ctab td{text-align:left;padding:7px 9px;
+  border-bottom:1px solid var(--line);vertical-align:top;line-height:1.45}
+.sheet table.ctab th{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.sheet table.ctab td:first-child{white-space:nowrap}
+.codepair{grid-template-columns:1fr 1fr}
+.codepair h4{margin-top:0}
+@media (max-width:860px){
+  .concepts{grid-template-columns:1fr}
+  .codepair{grid-template-columns:1fr}
+}
+@media (max-width:860px){.g2,.g3,.hand{grid-template-columns:1fr}
+  .cmp{grid-template-columns:1fr}
+  .cmpmid{flex-direction:row;gap:12px}
+  .cmpline{width:auto;height:1px;flex:1}
+  .tier4{grid-template-columns:1fr 1fr}.slide{padding:28px 26px 84px}h1{font-size:32px}}
+
+body{overflow:auto;height:auto}
+.doc{max-width:1080px;margin:0 auto;padding:0 32px 60px}
+.doc header{padding:44px 0 18px;border-bottom:3px solid var(--ink)}
+.doc header h1{font-size:38px;margin:0 0 8px}
+.doc header p{margin:0;color:var(--muted);font-size:16px;max-width:70ch}
+.badge{display:inline-block;margin-top:12px;font-size:11.5px;font-weight:800;
+  background:#eef2fb;color:var(--accent);padding:4px 10px;border-radius:6px}
+.toc{margin:22px 0 8px;padding:16px 20px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;font-size:13.5px}
+.toc b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--muted);margin-bottom:8px}
+.toc ol{margin:0;padding-left:18px;columns:2;column-gap:32px}
+.toc li{margin-bottom:4px}
+.toc a{color:var(--accent);text-decoration:none}
+.toc a:hover{text-decoration:underline}
+article{padding-top:26px}
+article > h2.pagetitle{font-size:13px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 4px}
+article > h3.deckh{font-size:30px;margin:0 0 10px;letter-spacing:-.02em}
+.doc h2.sec{font-size:15px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);
+  margin:34px 0 10px;padding-top:8px;border-top:1px solid var(--line)}
+.doc p{font-size:14.5px;color:#39445c;line-height:1.6;margin:0 0 10px}
+.doc .lede{font-size:16.5px;color:var(--muted)}
+.dl{opacity:1!important;animation:none!important}
+details{border:1px solid var(--line);border-radius:11px;background:var(--panel);margin:10px 0}
+details[open]{box-shadow:0 2px 10px rgba(16,24,40,.05)}
+summary{cursor:pointer;padding:12px 16px;font-weight:700;font-size:14px;list-style:none;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+";font-family:var(--mono);color:var(--accent);font-weight:800;width:12px}
+details[open] summary::before{content:"-"}
+summary .summeta{margin-left:auto;font-weight:600;font-size:12px;color:var(--muted);
+  font-family:var(--mono)}
+.details-body{padding:0 16px 16px}
+.tilecard{border-left:3px solid var(--line)}
+.tilecard.hot{border-left-color:var(--accent)}
+.stage{border-left:3px solid var(--accent);padding:2px 0 2px 16px;margin:18px 0}
+.stage .staget{font-weight:800;font-size:15px;margin-bottom:4px}
+.stage .staget span{color:var(--accent);font-family:var(--mono);margin-right:8px}
+.simplefoot{font-size:12.5px;color:#5b6478;margin:6px 0 0;padding-left:12px;
+  border-left:2px solid #e3e7ef;line-height:1.5}
+pre.code{background:#0f1526;color:#d7dcea;border-radius:9px;padding:12px 14px;
+  font-family:var(--mono);font-size:11.5px;line-height:1.6;overflow:auto;white-space:pre-wrap;margin:6px 0 0}
+.details-body pre{background:#0f1526;color:#d7dcea;border-radius:9px;padding:12px 14px;
+  font-family:var(--mono);font-size:11.5px;line-height:1.6;overflow:auto;white-space:pre-wrap;margin:6px 0 0}
+.limitbox{background:#fffbeb;border:1px solid #f5e6b8;border-radius:9px;padding:11px 13px;
+  font-size:13px;color:#6b5a1e;line-height:1.5;margin-top:6px}
+table.plain{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0 4px}
+table.plain th,table.plain td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line)}
+table.plain th{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+table.plain td.n{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.keep{color:#0b7a5c;font-weight:700}
+.dropped{color:#b42318}
+.baseline{color:var(--accent);font-weight:700}
+.code{margin:8px 0 0}
+footer{margin-top:46px;padding-top:16px;border-top:1px solid var(--line);
+  font-size:12.5px;color:var(--muted)}
+@media print{ details{page-break-inside:avoid} details[open] summary::before{content:"-"} }
+</style></head>
+<body class="doc">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="ic-doc" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+<symbol id="ic-route" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="6" r="2.2"/><path d="M8.2 18h5.3A4.5 4.5 0 0 0 18 13.5V8.2"/></symbol>
+<symbol id="ic-link" viewBox="0 0 24 24"><rect x="2.5" y="9" width="6" height="6" rx="1.5"/><rect x="15.5" y="9" width="6" height="6" rx="1.5"/><path d="M8.5 12h7"/></symbol>
+<symbol id="ic-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.2l2.8 2.8L16.4 9"/></symbol>
+<symbol id="ic-wand" viewBox="0 0 24 24"><path d="M4.5 19.5L15 9"/><path d="M14.5 3.5l1.4 2.6 2.6 1.4-2.6 1.4L14.5 11.5l-1.4-2.6L10.5 7.5l2.6-1.4z"/><path d="M19 14l.8 1.5 1.5.8-1.5.8-.8 1.5-.8-1.5-1.5-.8 1.5-.8z"/></symbol>
+<symbol id="ic-align" viewBox="0 0 24 24"><path d="M4 6h16M4 12h11M4 18h6"/><path d="M18.5 15.5l1.8 1.8 3-3.2"/></symbol>
+<symbol id="ic-brain" viewBox="0 0 24 24"><path d="M9.5 4A3 3 0 0 0 6.6 8a3 3 0 0 0-1 5.4A3 3 0 0 0 8 18.6a3 3 0 0 0 5.5-.7V4.8A2.6 2.6 0 0 0 11 4z"/><path d="M14.5 4a3 3 0 0 1 2.9 4 3 3 0 0 1 1 5.4 3 3 0 0 1-2.4 5.2 3 3 0 0 1-2.5 1"/></symbol>
+<symbol id="ic-robot" viewBox="0 0 24 24"><rect x="3.5" y="7.5" width="17" height="12" rx="3.2"/><circle cx="9" cy="13" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="1.3" fill="currentColor" stroke="none"/><path d="M12 7.5V4M9.5 16.5h5"/></symbol>
+<symbol id="ic-calc" viewBox="0 0 24 24"><rect x="4.5" y="2.5" width="15" height="19" rx="2.5"/><path d="M8 7h8M8 11.5h2M12 11.5h2M16 11.5h0M8 15.5h2M12 15.5h2M16 15.5h0M8 19h6"/></symbol>
+<symbol id="ic-layers" viewBox="0 0 24 24"><path d="M12 3l8.5 4.6L12 12.2 3.5 7.6z"/><path d="M3.5 12.2L12 16.8l8.5-4.6"/><path d="M3.5 16.6L12 21.2l8.5-4.6"/></symbol>
+<symbol id="ic-steps" viewBox="0 0 24 24"><rect x="3" y="3.5" width="6.5" height="6" rx="1.5"/><rect x="14.5" y="3.5" width="6.5" height="6" rx="1.5"/><rect x="8.8" y="14.5" width="6.5" height="6" rx="1.5"/><path d="M6.2 9.5v2.2h11.5V9.5M12 11.7v2.8"/></symbol>
+<symbol id="ic-ruler" viewBox="0 0 24 24"><rect x="2" y="8" width="20" height="8" rx="2"/><path d="M6.5 8v3.2M11 8v3.2M15.5 8v3.2M20 8v3.2"/></symbol>
+<symbol id="ic-swap" viewBox="0 0 24 24"><path d="M3.5 8.5h14l-3.2-3.2M20.5 15.5h-14l3.2 3.2"/></symbol>
+<symbol id="ic-q" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.2a2.7 2.7 0 1 1 3.8 2.5c-.7.3-1.2 1-1.2 1.8v.3"/><circle cx="12" cy="17.2" r="0.9" fill="currentColor" stroke="none"/></symbol>
+<symbol id="ic-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.8 8.8l6.4 6.4M15.2 8.8l-6.4 6.4"/></symbol>
+</defs></svg>
+
+<header>
+  <h1>DSPy: a tech share</h1>
+  <p>How a benchmark-selection prompt became something measurable, and what an optimiser did with it.</p>
+  <span class="badge">STATIC VERSION · NO JAVASCRIPT · SINGLE FILE</span>
+</header>
+<nav class="toc"><b>Contents</b><ol>
+  <li><a href="#p1">What DSPy is and what it can do</a></li>
+  <li><a href="#p2">The setup, and what DSPy does with it</a></li>
+  <li><a href="#p3">The prompt, version by version</a></li>
+  <li><a href="#p4">How the optimiser works</a></li>
+</ol></nav>
+<main>
+
+<article id="p1">
+  <h2 class="pagetitle">Page 1</h2>
+  <h3 class="deckh">What DSPy is, and what it can do</h3>
+  <p class="lede">A Python toolkit for LLM systems: you describe the job, and a scoring test decides
+  whether a change to the instructions helped.</p>
+
+  <h2 class="sec">The problem it solves</h2>
+  <p>You write a prompt. It works in the demo. Then you change the model, add a rule, or tune it for
+  one more client, and you cannot tell whether it got better or worse. Every change is a guess judged
+  by eyeballing a few outputs. DSPy's answer is to stop treating the prompt as the thing you edit and
+  start treating it as an output you measure.</p>
+  <table class='plain'><tr><th></th><th>hand-prompted</th><th>with a score</th></tr><tr><td>prompt v1</td><td>?</td><td>0.61</td></tr><tr><td>prompt v2</td><td>?</td><td>0.77</td></tr><tr><td>prompt v3</td><td>?</td><td>0.58</td></tr></table>
+  <p>Same three prompts. The only difference is a test that returns a number.</p>
+
+  <h2 class="sec">How the framework is shaped</h2>
+  <p>Five pieces, in order. The plain name is what it means; the grey name is what you would type.</p>
+  <table class='plain'><tr><th>step</th><th>plain name</th><th>what it is</th><th>DSPy name</th></tr><tr><td>1</td><td>The task</td><td>what goes in, what comes out</td><td class='mono2'>Signature</td></tr><tr><td>2</td><td>The method</td><td>one answer, or reason first, or use tools</td><td class='mono2'>Module</td></tr><tr><td>3</td><td>The pipeline</td><td>steps joined together in Python</td><td class='mono2'>Module subclass</td></tr><tr><td>4</td><td>The score</td><td>a test that says right or wrong</td><td class='mono2'>Metric</td></tr><tr><td>5</td><td>The editor</td><td>rewrites the instructions to raise the score</td><td class='mono2'>Optimiser</td></tr></table>
+  <p><b>Closest familiar thing: a compiler.</b> You write what you want in a readable form; a compiler
+  produces the low-level instructions. DSPy does that for prompts. Unlike a compiler, the "correct
+  output" has to come from your own test score, which is why the score is the hard part.</p>
+
+  <h2 class="sec">A single call, end to end</h2>
+  <table class='plain'><tr><th>move</th><th>what happens</th></tr><tr><td>1. Declare</td><td>The fields you want, with types, plus one sentence saying what the job is.</td></tr><tr><td>2. Build prompt</td><td>A formatter turns that declaration into instructions for the model.</td></tr><tr><td>3. Model answers</td><td>One API call to whichever model you configured.</td></tr><tr><td>4. Parse</td><td>The text is converted back into real data: lists, numbers, fixed options.</td></tr><tr><td>5. Typed object</td><td>You ask for result.answer. A wrong shape raises instead of passing silently.</td></tr></table>
+  <p>No prompt is stored in your code. It is built fresh each call from your declaration plus whatever
+  the editor last wrote, which is why changing model does not throw away your work.</p>
+
+  <h2 class="sec">What it can do</h2>
+  <p>Each entry expands. Open one for the function, a code example, when to use it, when not to, and
+  its limitation.</p>
+
+<details class="tilecard"><summary>Signatures &mdash; Specify what you want, not how
+<span class="summeta">dspy.Signature · InputField · OutputField</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:6px">What it is</h2><p>A signature is a <b>typed description of one task</b>. It says which inputs go in, which outputs must come out, and what type each one is. It is a Pydantic model underneath, so the reply is validated against the declared types instead of being passed along as loose text. The class docstring is the instruction - the one string an optimiser may rewrite.</p>
+  <h2 class="sec">What goes into it</h2><table class="ctab">
+<tr><th>ingredient</th><th>what it does</th></tr>
+<tr><td>the docstring</td><td>the instruction. This is the only part an optimiser may rewrite.</td></tr>
+<tr><td><code>InputField</code></td><td>a value the caller supplies. Never generated.</td></tr>
+<tr><td><code>OutputField</code></td><td>a value the model must produce. Validated on parse.</td></tr>
+<tr><td>types</td><td><code>str</code>, <code>int</code>, <code>Literal[...]</code>, nested models,
+    <code>list[...]</code>. A literal turns "pick a category" into a closed set.</td></tr>
+<tr><td>field order</td><td>preserved, and it is the order the model sees. Inputs come first.</td></tr>
+</table>
+  <h2 class="sec">A simple example</h2>
+  <pre class="code">class Sentiment(dspy.Signature):
+    """Is this product review positive or negative?"""
+    review: str = dspy.InputField()
+    label: Literal["positive", "negative"] = dspy.OutputField()
+
+classify = dspy.Predict(Sentiment)
+classify(review="Battery dies in an hour.")</pre>
+  <p class="simplefoot">Nothing here is a prompt. The docstring is the task, the two fields are the contract, and <code>Literal</code> means the model cannot answer 'mixed' - the parser would reject it.</p>
+  <h2 class="sec">In our case</h2><p>Our benchmark task, in full:</p>
+<pre>class SelectEquityBenchmarks(dspy.Signature):
+    """Pick three defensible benchmarks for one holding."""
+    holding: str = dspy.InputField(desc="equity, with exposure facts")
+    risk_level: str = dspy.InputField(desc="pre-mapped upstream")
+    shortlist: str = dspy.InputField(desc="permitted benchmark ids")
+    look_through_analysis: str = dspy.OutputField()
+    selections: list[PickModel] = dspy.OutputField()</pre>
+<p style="margin-top:10px">And what that produces for NVIDIA:</p>
+<pre class="out">Prediction(
+  look_through_analysis='US semiconductor exposure; valuation and exposure
+                         currency both USD, so no wrapper adjustment.',
+  selections=[PickModel(benchmark_id='EQ_AMD', role='dominant_sleeve', ...),
+              PickModel(benchmark_id='EQ_TSM', role='dominant_sleeve', ...),
+              PickModel(benchmark_id='IDX_SOX', role='diversifier', ...)]
+)</pre>
+<p style="margin-top:10px">Two things are <b>absent</b> on purpose. There is no <code>name</code>
+field, so the catalogue name is a dictionary lookup and cannot be paraphrased. And there is no
+numeric field, so the model has nowhere to put an invented return.</p>
+  <h2 class="sec">Limitation</h2>
+  <div class="limitbox"><b>Limitation.</b> Types guarantee the shape, never the truth: a field typed <code>str</code> can hold a confident wrong answer. And every field you declare is one more thing the model must produce on every single call.</div>
+  <h4>There is no "avoid" case, and that is worth saying out loud</h4>
+<p>A signature is not a technique you opt into - it is what a DSPy call <em>is</em>. Even
+<code>dspy.Predict("question -> answer")</code> builds one behind the scenes from that string. So
+the decision is not <i>whether</i>, but three others: <b>which fields</b>, <b>how tight the
+types</b>, and <b>when to stop adding</b>.</p>
+</div></details>
+<details class="tilecard"><summary>Modules &mdash; Structure your program logically
+<span class="summeta">dspy.Predict · ChainOfThought · ReAct · RLM · BestOfN · Refine</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:6px">What it is</h2><p>A module is the <b>strategy</b> wrapped around a signature. The signature says what the task is; the module decides how to get there - one direct call, think first then answer, or a loop that calls tools. Swapping the module never changes the task definition, which is what makes strategy cheap to trial.</p>
+  <h2 class="sec">What goes into it</h2><table class="ctab">
+<tr><th>module</th><th>what it adds</th><th>calls</th></tr>
+<tr><td><code>Predict</code></td><td>nothing - one straight call</td><td>1</td></tr>
+<tr><td><code>ChainOfThought</code></td><td>a reasoning field before the answer</td><td>1</td></tr>
+<tr><td><code>ReAct</code></td><td>a loop: choose a tool, read the result, repeat</td><td>1 per turn</td></tr>
+<tr><td><code>BestOfN</code></td><td>N samples, keep the best by your reward function</td><td>N</td></tr>
+<tr><td><code>Refine</code></td><td>N samples, feed the failure back in as a hint</td><td>N</td></tr>
+</table>
+  <h2 class="sec">A simple example</h2>
+  <pre class="code"># the same signature, three strategies
+dspy.Predict(Sentiment)(review=text)          # answer straight away
+dspy.ChainOfThought(Sentiment)(review=text)   # reason, then answer
+dspy.BestOfN(dspy.Predict(Sentiment), N=5,
+             reward_fn=is_confident, threshold=1.0)(review=text)</pre>
+  <p class="simplefoot">One task, three different amounts of effort and cost. The signature was written once and never touched.</p>
+  <h2 class="sec">In our case</h2><p>We used <code>ChainOfThought</code>, because picking benchmarks is judgement rather
+than extraction - a direct call kept returning the first plausible index.</p>
+<pre>program = dspy.ChainOfThought(build_signature())
+pred = program(holding=..., risk_level=..., shortlist=...)</pre>
+<p style="margin-top:10px">The cost of that choice, measured: one extra reasoning field per call,
+and the reasoning is <b>not auditable</b> - it reads sensibly whether or not the picks are right.
+In 3.5 it is also no longer a plain string; it is <code>dspy.Reasoning | None</code>.</p>
+  <h2 class="sec">Limitation</h2>
+  <div class="limitbox"><b>Limitation.</b> Each step up costs tokens and latency; <code>BestOfN</code> at N=5 is five times the bill. And a module changes <em>how</em> the model reasons, never what it knows - no strategy recovers a fact that was missing from the input.</div>
+  
+</div></details>
+<details class="tilecard"><summary>Tools &mdash; Interact with the outside world
+<span class="summeta">dspy.Tool · dspy.ReAct · MCP · PythonInterpreter</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:6px">What it is</h2><p><b>You write the tool; the model only decides when to call it.</b> A tool is an ordinary Python function - your code, your side effects, your permissions. The model picks which function to call, with which arguments, reads the result, and decides whether to call another. Your function's docstring is what the model sees, so in DSPy a docstring is prompt text.</p>
+  <h2 class="sec">What goes into it</h2><table class="ctab">
+<tr><th>ingredient</th><th>what it does</th></tr>
+<tr><td>the function</td><td>anything callable. Typed arguments become the argument schema.</td></tr>
+<tr><td>the docstring</td><td>the description the model reads. Vague docstring, vague tool.</td></tr>
+<tr><td>a <code>ReAct</code> module</td><td>the loop that decides when to stop calling.</td></tr>
+<tr><td>a turn budget</td><td>what stops it looping forever. Always set one.</td></tr>
+</table>
+  <h2 class="sec">A simple example</h2>
+  <pre class="code">def get_weather(city: str) -&gt; str:
+    """Current weather for a city."""
+    return api.weather(city)
+
+agent = dspy.ReAct("question -&gt; answer", tools=[get_weather])
+agent(question="Do I need a coat in Tokyo?")</pre>
+  <p class="simplefoot">The model never writes this function. It reads the docstring, decides the function is relevant, supplies the argument, and reads what comes back.</p>
+  <h2 class="sec">In our case</h2><p>We did <b>not</b> use tools in the run you are looking at, and that was a cost
+rather than a design win.</p>
+<p style="margin-top:8px">The task read only what was supplied in the prompt: an id, a name, a
+sector, a country. The enrichment most likely to move the score - industry codes and measured
+co-movement per candidate - is exactly what a tool supplies.</p>
+<pre>def co_movement(asset_id: str, candidate_id: str) -> float:
+    """Trailing 2y correlation of daily returns, market-adjusted."""
+    return prices.residual_corr(asset_id, candidate_id)</pre>
+<p style="margin-top:10px">With that tool the model could check a candidate instead of guessing
+from its name. Without it, the only lever left was the wording of the instruction - which is
+precisely where the optimiser plateaued.</p>
+  <h2 class="sec">Limitation</h2>
+  <div class="limitbox"><b>Limitation.</b> Tools are capability you pre-wrote, so they cannot cover a case you did not foresee. Every call can fail, and failures compound inside a loop. And every tool is an attack surface, because the model chooses the arguments.</div>
+  <h4>Programmable, or generated?</h4>
+<table class="ctab">
+<tr><th>you need...</th><th>who writes it</th><th>use</th></tr>
+<tr><td>a capability you can write today; only the <i>when</i> is uncertain</td>
+    <td><b>you</b></td><td>a plain function + <code>dspy.ReAct</code></td></tr>
+<tr><td>the model to compute something by writing and running code</td>
+    <td><b>the model</b></td><td><code>dspy.RLM</code></td></tr>
+<tr><td>a fixed sequence you know in advance</td>
+    <td><b>you</b></td><td>just call it - no model, no tool</td></tr>
+</table>
+<p>The test is one question: can you write the function today? If yes, it is a tool. If the
+function itself is the hard part, you want code generation.</p>
+</div></details>
+<details class="tilecard"><summary>Adapters &mdash; Customizable prompt formatters
+<span class="summeta">XMLAdapter · ChatAdapter · JSONAdapter</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:6px">What it is</h2><p>The adapter is the layer between a signature and tokens. It renders the instructions, the field schema and any demos into an actual prompt, then parses the reply back into your declared types. The same signature through two adapters is two different prompts and two different parsers - so the adapter is part of the system, not a formatting detail.</p>
+  <h2 class="sec">What goes into it</h2><table class="ctab">
+<tr><th>ingredient</th><th>what it does</th></tr>
+<tr><td>instructions</td><td>the signature docstring, placed as the system message.</td></tr>
+<tr><td>field schema</td><td>names, types and descriptions, rendered into the prompt.</td></tr>
+<tr><td>demos</td><td>few-shot examples an optimiser selected, if any.</td></tr>
+<tr><td>the parser</td><td>turns the reply back into typed objects. This is what rejects bad
+    shapes, and what triggers a retry.</td></tr>
+</table>
+  <h2 class="sec">A simple example</h2>
+  <pre class="code">dspy.Predict(Sentiment)     # built once
+# with XMLAdapter the model is asked for:   &lt;label&gt;negative&lt;/label&gt;
+# with ChatAdapter it is asked for:         [[ ## label ## ]] negative
+# with JSONAdapter it is asked for:         {"label": "negative"}</pre>
+  <p class="simplefoot">Identical signature. The only difference is what the model is told to emit, and how strictly the reply is parsed.</p>
+  <h2 class="sec">In our case</h2><p>This one was not academic - the adapter decided whether the project ran at all.</p>
+<pre class="out">same signature, same model (deepseek/deepseek-flash):
+  JSONAdapter   -> LMInvalidRequestError: response_format unavailable
+  XMLAdapter    -> 30 cases run, 7 failed to parse
+  ChatAdapter   -> 5/5 parse on exactly those failing cases</pre>
+<p style="margin-top:10px">Switching XML to Chat took parse failures from 23% to 3% without
+changing one character of the task definition. The first version of the run was measuring the
+adapter, not the prompt.</p>
+  <h2 class="sec">Limitation</h2>
+  <div class="limitbox"><b>Limitation.</b> 3.5 changed the default from Chat to XML, so upgrading silently changes every prompt you already have; anything optimised before the upgrade must be re-measured. And providers that reject <code>response_format</code> need the JSON fallback explicitly disabled.</div>
+  
+</div></details>
+<details class="tilecard"><summary>Optimizers &mdash; Optimize your program, ML-style
+<span class="summeta">dspy.GEPA · MIPROv2 · BootstrapFewShot · COPRO · SIMBA</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:6px">What it is</h2><p>An optimiser proposes changes, scores each one with your metric, and keeps only what wins. Every optimiser tunes one or more of exactly three knobs - the <b>instructions</b>, the <b>demos</b>, or the model <b>weights</b>. Nothing else is in the search space; the schema, the gates and your evaluation set stay frozen, which is what stops it cheating.</p>
+  <h2 class="sec">What goes into it</h2><table class="ctab">
+<tr><th>ingredient</th><th>what it does</th></tr>
+<tr><td>your metric</td><td>the only definition of better. Also the budget unit.</td></tr>
+<tr><td>a trainset</td><td>cases it may optimise against.</td></tr>
+<tr><td>a valset</td><td>cases it uses to choose between candidates. Keep it separate.</td></tr>
+<tr><td>a proposer</td><td>writes new instructions. For GEPA this is a second model.</td></tr>
+<tr><td>a budget</td><td><code>max_metric_calls</code>. This, not a prompt count, is what bounds
+    the run.</td></tr>
+</table>
+  <h2 class="sec">A simple example</h2>
+  <pre class="code"># the cheapest optimiser: keep a few good examples as demos
+opt = dspy.BootstrapFewShot(metric=metric, max_bootstrapped_demos=3)
+better = opt.compile(student=program, trainset=trainset)</pre>
+  <p class="simplefoot">No reflection model, so it costs a fraction of GEPA. It only selects demos - it never rewrites your instruction.</p>
+  <h2 class="sec">In our case</h2><p>We ran <code>GEPA</code>, which rewrites the instruction and reads your metric's
+feedback while doing it.</p>
+<pre class="out">21 iterations, 14 proposals written, 120 metric calls
+v0  0.635   the prompt a human wrote
+v1  0.738   kept
+v2  0.767   kept  <- best
+v3..v14     all worse than v2, discarded
+
+12 of 14 proposals did not beat the human prompt</pre>
+<p style="margin-top:10px">The improvement is real but narrow: GEPA fixed three of ten held-out
+cases to a perfect score and left the other seven untouched. It could not help where the input
+was the limitation rather than the wording.</p>
+  <h2 class="sec">Limitation</h2>
+  <div class="limitbox"><b>Limitation.</b> Hundreds of model calls, and most candidates come back worse than where you started. An optimiser cannot add a fact the model lacks, cannot reorder the shortlist it was given, and cannot fix a metric that rewards the wrong thing.</div>
+  <h4>They are not interchangeable</h4>
+<table class="ctab">
+<tr><th>optimiser</th><th>tunes</th><th>reach for it when</th></tr>
+<tr><td><b>GEPA</b></td><td>instructions</td>
+    <td>your metric returns feedback text, not just a number</td></tr>
+<tr><td>MIPROv2</td><td>instructions + demos</td>
+    <td>both look weak and you have budget</td></tr>
+<tr><td>BootstrapFewShot</td><td>demos</td>
+    <td>first thing to try; costs almost nothing</td></tr>
+<tr><td>BootstrapRS</td><td>demos, random search</td>
+    <td>demo quality varies between draws</td></tr>
+<tr><td>COPRO</td><td>instructions only</td>
+    <td>fast shallow sweep without a feedback metric</td></tr>
+<tr><td>SIMBA</td><td>instructions, mini-batch</td>
+    <td>failures share a pattern you can name</td></tr>
+<tr><td>BootstrapFinetune</td><td>weights</td>
+    <td>prompt-only has plateaued and the model is tunable</td></tr>
+<tr><td>BetterTogether</td><td>prompt, then weights</td>
+    <td>you tried both separately and suspect they compose</td></tr>
+</table>
+<p>All of them return a new program and leave the original untouched, so the same student can be
+compiled three ways and compared.</p>
+</div></details>
+<details class="tilecard"><summary>Metrics &mdash; Define what to optimize against
+<span class="summeta">any callable · dspy.Evaluate · SemanticF1</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:6px">What it is</h2><p>A metric is a function taking <code>(gold, prediction)</code> and returning a number - or, far better, a number <em>and a sentence of feedback</em>. The number decides keep or discard. The sentence is what the optimiser's reflection step reads, and it is the whole reason a rewrite can be targeted rather than random. The optimiser's budget is counted in <b>calls to this function</b>.</p>
+  <h2 class="sec">What goes into it</h2><table class="ctab">
+<tr><th>ingredient</th><th>what it does</th></tr>
+<tr><td><code>gold</code></td><td>the labelled example: what the right answer is.</td></tr>
+<tr><td><code>pred</code></td><td>what the program produced this time.</td></tr>
+<tr><td><code>trace</code></td><td>optional. Lets a metric behave one way at evaluation time and
+    another inside an optimiser.</td></tr>
+<tr><td>the return value</td><td><code>bool</code>, <code>float</code>, or
+    <code>Prediction(score, feedback)</code>.</td></tr>
+<tr><td><code>feedback</code></td><td>the sentence GEPA reads. Omit it and reflection has nothing
+    to work from.</td></tr>
+</table>
+  <h2 class="sec">A simple example</h2>
+  <pre class="code">def exact(gold, pred, trace=None):
+    return gold.answer.strip().lower() == pred.answer.strip().lower()</pre>
+  <p class="simplefoot">The simplest legal metric: True or False per example, averaged into a percentage. It works - but it gives the optimiser no reason, so reflection can only guess what to change.</p>
+  <h2 class="sec">In our case</h2><p>Ours is four layers, applied in this order:</p>
+<pre>1. hard gates      wrong count / unknown id / duplicate   -> score 0
+2. tiered credit    peer 1.0 + adjacent 0.5, divided by 3
+3. soft penalties   -0.12 per broken rule (word limit, banned word, ...)
+4. feedback text    "peer=1 adjacent=2 wrong=0. Prefer same-industry peers."</pre>
+<p style="margin-top:10px">And the sentence that actually drove the optimisation:</p>
+<pre class="out">EQ_NVDA: scored 0.55 with ['IDX_SOX', 'ETF_XLK', 'IDX_SPX'].
+peer=1 adjacent=2 wrong=0. Prefer same-industry peers over broad indices;
+acceptable examples were ['EQ_AMD', 'EQ_ASML', 'EQ_AVGO'].</pre>
+<p style="margin-top:10px">Everything after <code>peer=1</code> is guidance a scalar score could
+never carry. Drop it and the optimiser is not merely weakened - GEPA substitutes
+<i>"This trajectory got a score of 0.55"</i>, and the loop stops learning.</p>
+  <h2 class="sec">Limitation</h2>
+  <div class="limitbox"><b>Limitation.</b> The metric becomes the objective, so any hole in it gets exploited, and an automated search finds holes faster than a human does. Ours is also a proxy: it scores 0 on a genuine peer it cannot see, and carries roughly ±0.08 of noise on ten cases.</div>
+  <h4>What makes a metric trustworthy</h4>
+<table class="ctab">
+<tr><th>property</th><th>fails like this</th></tr>
+<tr><td><b>Discriminative</b></td><td>every candidate scores 0.9 - no gradient, nothing to climb</td></tr>
+<tr><td><b>Ungameable</b></td><td>a junk answer scores well, and the optimiser finds it</td></tr>
+<tr><td><b>Aligned</b></td><td>it improves while the real outcome gets worse</td></tr>
+<tr><td><b>Cheap</b></td><td>you cannot afford 120 calls, so you optimise blind</td></tr>
+<tr><td><b>Stable</b></td><td>the same input scores differently on reruns; you chase noise</td></tr>
+</table>
+</div></details>
+  <h2 class="sec">The trade</h2>
+  <table class='plain'><tr><th>good fit</th><th>bad fit</th></tr><tr><td>The job splits into steps, correctness is checkable by code, and you expect to change models.</td><td>You will run it five times, or nobody can define correct, or a plain function already answers it.</td></tr></table>
+
+  <h2 class="sec">What our own measurement cannot tell you</h2>
+  <table class='plain'><tr><th>limit</th><th>why it matters</th></tr><tr><td>Cannot resolve small gains</td><td>10 held-out cases puts roughly plus or minus 0.08 of standard error on the mean. A +0.03 change is noise.</td></tr><tr><td>Only scores what we listed</td><td>ASML is a genuine semiconductor peer but sits in a different industry code, so no signal we have can see it.</td></tr><tr><td>The weights are our judgement</td><td>Peer 1.0 / adjacent 0.5 / wrong -1.5 was chosen, not derived. Change them and the ranking can change.</td></tr><tr><td>Part of it is circular</td><td>Some labels come from the same taxonomy the scorer uses. Agreement confirms consistency, not correctness.</td></tr></table>
+</article>
+
+<article id="p2">
+  <h2 class="pagetitle">Page 2</h2>
+  <h3 class="deckh">The setup, and what DSPy does with it</h3>
+  <p class="lede">One real task: given an equity, pick three defensible benchmark references.
+  NVDA should get AMD or TSMC, not Salesforce.</p>
+
+  <h2 class="sec">1. What we hand to DSPy</h2>
+  <table class='plain'><tr><th>artifact</th><th>size</th><th>what it becomes</th></tr><tr><td>Catalogue</td><td class='n'>89</td><td>89 instruments with sector, industry, region, currency. The model may not invent an id outside it. Becomes the shortlist input.</td></tr><tr><td>Labelled cases</td><td class='n'>30</td><td>30 assets with hand-curated truth in four tiers. 10 are held out. Becomes the trainset and the held-out set.</td></tr><tr><td>Metric</td><td class='n'>1 fn</td><td>Turns one answer into a score plus a sentence of feedback. Becomes the objective.</td></tr></table>
+  <p>DSPy adds three things we did not write: the signature (shape of the answer), the program (the
+  call), and the optimiser (the rewriting loop).</p>
+
+  <h2 class="sec">2. Where the metric came from</h2>
+  <p>Nobody hands you a metric. It is built, mostly from failure analysis. Four steps:
+  start from the cost, curate truth in tiers, pick weights openly, automate the checks.</p>
+  <table class='plain'><tr><th>tier</th><th>count</th><th>examples for NVDA</th><th>credit</th></tr><tr><td>peer</td><td class='n'>10</td><td class='mono2'>EQ_AMD, EQ_ASML, EQ_AVGO, EQ_INTC</td><td class='n'>+1.0</td></tr><tr><td>adjacent</td><td class='n'>15</td><td class='mono2'>ETF_EWH, ETF_EWJ, ETF_QQQ, ETF_SPY</td><td class='n'>+0.5</td></tr><tr><td>hard negative</td><td class='n'>5</td><td class='mono2'>EQ_ADBE, EQ_CRM, EQ_MSFT, EQ_ORCL</td><td class='n'>-1.5</td></tr><tr><td>unrelated</td><td class='n'>56</td><td class='mono2'>CASH_SGD, CASH_USD, EQ_AMZN, EQ_APD</td><td class='n'>-1.5</td></tr></table>
+  <p><b>Hard negatives are the ones that matter.</b> Anyone can reject oil for a chip company. Only a
+  real analysis rejects a software company for a chip company, which is why five Salesforce-class ids
+  sit in their own tier. Nothing here was inferred by a model.</p>
+  <p>The same three picks (AMD + TSM + CRM) under three different penalties, which is why the weights
+  are published rather than buried:</p>
+  <table class='plain'><tr><th>wrong-pick penalty</th><th>score for AMD + TSM + CRM</th></tr><tr><td>penalty 0.5</td><td class='n'>0.500</td></tr><tr><td>penalty 1.5</td><td class='n'>0.167</td></tr><tr><td>penalty 3.0</td><td class='n'>0.000</td></tr></table>
+  <p>At 0.5 a peer-less answer still scores respectably. At 3.0 it collapses. Same answer, different
+  metric, different conclusion.</p>
+
+  <h2 class="sec">3. What a score actually is</h2>
+  <p>The score is not a similarity rating. It is a small additive rule over the three ids returned:
+  peer 1.0, adjacent 0.5, wrong -1.5, divided by three, then penalised for duplicate exposure.</p>
+  <table class='plain'><tr><th>picks</th><th>what they are</th><th>score</th><th>peers / adj / wrong</th></tr><tr><td class='mono2'>EQ_AMD, EQ_TSM, IDX_SOX</td><td>three true peers</td><td class='n'>1.000</td><td>3 / 0 / 0</td></tr><tr><td class='mono2'>EQ_AMD, EQ_TSM, IDX_SPX</td><td>two peers, one broad</td><td class='n'>0.833</td><td>2 / 1 / 0</td></tr><tr><td class='mono2'>EQ_AMD, IDX_SOX, ETF_XLK</td><td>one peer, two references</td><td class='n'>0.833</td><td>2 / 1 / 0</td></tr><tr><td class='mono2'>EQ_AMD, EQ_TSM, EQ_CRM</td><td>two peers, one wrong pick</td><td class='n'>0.167</td><td>2 / 0 / 1</td></tr><tr><td class='mono2'>IDX_SOX, ETF_XLK, IDX_SPX</td><td>no peer at all</td><td class='n'>0.667</td><td>1 / 2 / 0</td></tr><tr><td class='mono2'>EQ_CRM, EQ_COP, CASH_USD</td><td>all three wrong</td><td class='n'>0.000</td><td>0 / 0 / 3</td></tr></table>
+  <p>All 84 combinations were scored with the real metric. This table is a sample.</p>
+
+  <h2 class="sec">4. Anatomy of one full iteration - how v1 was produced</h2>
+
+<div class="stage"><div class="staget"><span>1</span>The baseline program runs on the training split</div>
+<div class="details-body" style="padding-left:0"><p>The unchanged program is executed on every training case. One call per case, through the signature, with the current instruction.</p><div class='anabox'><span class='anak'>holding</span> EQ_NVDA ... industry=Semiconductors | exposure_currency=USD<br><span class='anak'>shortlist</span> 88 instruments<br><span class='anak'>instruction</span> the v0 text, unchanged</div><p style='margin-top:10px'>It returned:</p><div class='anaout'>IDX_SOX &nbsp; ETF_XLK &nbsp; IDX_SPX</div><p style='margin-top:8px'>One genuine peer, two references. <b>Score on this case: 0.550.</b> Across all ten held-out cases the same prompt averages 0.635 &mdash; that mean is what &lsquo;v0 = 0.635&rsquo; refers to.</p></div></div>
+<div class="stage"><div class="staget"><span>2</span>The metric returns a number AND a sentence</div>
+<div class="details-body" style="padding-left:0"><p>The number decides whether a candidate is kept. The sentence is what the reflection model reads. Both come from the same function call.</p><div class='anatwo'><div class='analeft'><div class='analab'>score &middot; NVDA only</div><div class='anabig'>0.550</div></div><div class='anaright'><div class='analab'>feedback</div><div class='anafb'>EQ_NVDA: scored 0.55 with ['IDX_SOX', 'ETF_XLK', 'IDX_SPX']. peer=1 adjacent=2 wrong=0. Prefer same-industry peers over broad indices; acceptable examples were ['EQ_AMD', 'EQ_ASML', 'EQ_AVGO', 'EQ_INTC', 'EQ_MU'].</div></div></div><p style='margin-top:10px'>This is the score for <b>one case</b>, which is exactly what the optimiser sees at a time. Everything after <i>peer=1</i> is guidance a scalar score could never carry. Without it the optimiser knows a candidate lost, not why.</p></div></div>
+<div class="stage"><div class="staget"><span>3</span>GEPA assembles instruction + examples + feedback</div>
+<div class="details-body" style="padding-left:0"><p>This is a <b>second, separate model call</b> &mdash; the reflection model, not the task model. It receives the whole current instruction and a handful of scored examples, each with the answer it produced and the feedback the metric gave it. Nothing is summarised for it; it sees the raw strings.</p><div class='pgp'><div class='pgsec pgdim'>You are an expert optimization assistant. Your task is to analyze evaluation feedback and propose an improved version of a system component.</div><div class='pgsec'><div class='pgh'>## Current Component</div><div class='pgdim'>The component being optimized:</div><pre class='pgcode'>You are a benchmark research analyst supporting a private-banking investment
+review.
+
+Select three benchmarks for the security provided that would serve as useful
+reference points for comparing its performance. Choose only from the supplied
+reference pack; do not invent an index.
+
+When choosing, consider the security's asset class, sector and geography, and
+whether a broad market index or a more targeted index makes the better
+comparison.
+
+For each benchmark give its id and a short rationale explaining why it is a
+reasonable comparison.</pre></div><div class='pgsec'><div class='pgh'>## Evaluation Results</div><div class='pgdim'>Performance data from evaluating the current component across test cases:</div><div class='pgex'><div class='pgk'>Example 1</div><div class='pgrow'><span class='pgkk'>Inputs</span> holding = EQ_NVDA, shortlist = 89 ids</div><div class='pgrow'><span class='pgkk'>Generated Output</span> <code>IDX_SOX , ETF_XLK , IDX_SPX</code></div><div class='pgrow'><span class='pgkk'>Feedback</span> EQ_NVDA: scored 0.55 with ['IDX_SOX', 'ETF_XLK', 'IDX_SPX']. peer=1 adjacent=2 wrong=0. Prefer same-industry peers over broad indices; acceptable examples were ['EQ_AMD', 'EQ_ASML', 'EQ_AVGO', 'EQ_INTC', 'EQ_MU'].</div></div><div class='pgex'><div class='pgk'>Example 2</div><div class='pgrow'><span class='pgkk'>Inputs</span> holding = EQ_CRM, shortlist = 89 ids</div><div class='pgrow'><span class='pgkk'>Generated Output</span> <code>ETF_IGV , EQ_ORCL , IDX_SPX</code></div><div class='pgrow'><span class='pgkk'>Feedback</span> EQ_CRM: scored 0.83 with ['ETF_IGV', 'EQ_ORCL', 'IDX_SPX']. peer=2 adjacent=1 wrong=0.</div></div></div><div class='pgsec'><div class='pgh'>## Your Task</div><div class='pgdim'>Analyze the evaluation results systematically:</div><ul class='pglist'><li><b>Failure patterns</b> &mdash; what specific errors or edge cases appear?</li><li><b>Success patterns</b> &mdash; what worked and should be preserved?</li><li><b>Root causes</b> &mdash; what underlying issues explain the failures?</li></ul><div class='pgdim' style='margin-top:8px'>Based on your analysis, propose an improved version. Provide <b>only</b> the improved version, inside a fenced block.</div></div></div><p style='margin-top:10px'>Two examples are shown; the real call sends three (<code>reflection_minibatch_size</code> defaults to 3). It is told to <i>analyse</i>, never what to change &mdash; the fix has to come from reading the feedback.</p></div></div>
+<div class="stage"><div class="staget"><span>4</span>The reflection model writes candidate v1</div>
+<div class="details-body" style="padding-left:0"><p>This is the whole output - 212 words. No human edited it.</p><div class='anacode'>You are a benchmark research analyst. Inputs: `holding = &lt;id&gt; (&lt;name&gt;) | sector=... | industry=... | valuation_currency=... | exposure_currency=... | exposure_region=...`; `risk_level`; and `shortlist` = newline-separated entries `&lt;benchmark_id&gt; :: &lt;name&gt; :: kind=... :: asset_class=... :: breadth=... :: region=... :: ccy=... [:: industry=...]`.
+
+Select exactly three benchmarks from the shortlist only; never invent or alter IDs. Use selection priority: (1) same-industry equity peers in the same asset class first, especially when geography/currency align; (2) same-sector/industry ETF or index if peer coverage is insufficient; (3) broad-market index/ETF for context only. Prefer same-industry peers over broad indic...</div><p style='margin-top:10px'>What it decided to add: an explicit <b>priority order</b> (peers first, sector fund second, broad index last), <b>named peer examples</b> per industry, and a <b>near-duplicate rule</b>. None of that was in v0 or in the metric.</p></div></div>
+<div class="stage"><div class="staget"><span>5</span>Scored on the same cases, then kept or discarded</div>
+<div class="details-body" style="padding-left:0"><p>The candidate runs on the held-out cases with the same metric as the baseline. Nothing else changed.</p><table class='anatab'><tr><th>version</th><th>score</th><th>outcome</th></tr><tr><td>v0 (human)</td><td>0.635</td><td class='drop'>the incumbent</td></tr><tr><td>v1 (GEPA)</td><td><b>0.738</b></td><td class='keep'>kept - it beat the incumbent</td></tr></table><p style='margin-top:10px'>That is one full iteration. GEPA then repeats this thirteen more times, which is why most of the later versions are worse: only candidates that beat the incumbent survive.</p></div></div>
+  <h2 class="sec">5. What the optimiser actually did</h2>
+  <p>Fourteen proposals. <b>Two improved on the human prompt, twelve did not.</b></p>
+  <table class='plain'><tr><th>version</th><th>score</th><th>vs baseline</th><th>outcome</th></tr><tr><td class='mono2'>v0</td><td class='n'>0.635</td><td>base</td><td class='baseline'>baseline</td></tr><tr><td class='mono2'>v1</td><td class='n'>0.738</td><td>+0.103</td><td class='keep'>kept</td></tr><tr><td class='mono2'>v2</td><td class='n'>0.767</td><td>+0.132</td><td class='keep'>kept</td></tr><tr><td class='mono2'>v3</td><td class='n'>0.583</td><td>-0.052</td><td class='dropped'>dropped</td></tr><tr><td class='mono2'>v4</td><td class='n'>0.559</td><td>-0.076</td><td class='dropped'>dropped</td></tr><tr><td class='mono2'>v5</td><td class='n'>0.638</td><td>+0.003</td><td class='dropped'>dropped</td></tr><tr><td class='mono2'>v6</td><td class='n'>0.510</td><td>-0.125</td><td class='dropped'>dropped</td></tr><tr><td class='mono2'>v7</td><td class='n'>0.583</td><td>-0.052</td><td class='dropped'>dropped</td></tr><tr><td class='mono2'>v8</td><td class='n'>0.667</td><td>+0.032</td><td class='dropped'>dropped</td></tr><tr><td class='mono2'>v9</td><td class='n'>0.498</td><td>-0.137</td><td class='dropped'>dropped</td></tr><tr><td class='mono2'>v10</td><td class='n'>0.498</td><td>-0.137</td><td class='dropped'>dropped</td></tr><tr><td class='mono2'>v11</td><td class='n'>0.667</td><td>+0.032</td><td class='dropped'>dropped</td></tr><tr><td class='mono2'>v12</td><td class='n'>0.638</td><td>+0.003</td><td class='dropped'>dropped</td></tr><tr><td class='mono2'>v13</td><td class='n'>0.667</td><td>+0.032</td><td class='dropped'>dropped</td></tr><tr><td class='mono2'>v14</td><td class='n'>0.609</td><td>-0.026</td><td class='dropped'>dropped</td></tr></table>
+
+  <h2 class="sec">6. 22 rules, two very different fates</h2>
+  <p><b>16 enforced by code</b> and <b>6 left to the optimiser.</b> A rule in prose is a hope;
+  a rule in code is a guarantee.</p>
+  <table class='plain'><tr><th>how</th><th>rule enforced by code</th></tr><tr><td class='mono2'>schema</td><td>Return only valid JSON matching the schema</td></tr><tr><td class='mono2'>validator</td><td>Select exactly three distinct benchmarks</td></tr><tr><td class='mono2'>validator</td><td>Every benchmark_id must exist in the pack</td></tr><tr><td class='mono2'>schema</td><td>Preserve the catalogue name exactly</td></tr><tr><td class='mono2'>validator</td><td>Do not select the same benchmark twice</td></tr><tr><td class='mono2'>validator</td><td>No three near-duplicates of one exposure</td></tr><tr><td class='mono2'>validator</td><td>Do not state returns, volatility, Sharpe or any numeric result</td></tr><tr><td class='mono2'>python</td><td>Rationale must begin with risk_rationale_prefix exactly</td></tr><tr><td class='mono2'>schema</td><td>Rationale must state the benchmark's role</td></tr><tr><td class='mono2'>schema</td><td>Rationale must state at least one material limitation</td></tr><tr><td class='mono2'>validator</td><td>Do not call a benchmark equivalent/accurate/verified/perfect/approved</td></tr><tr><td class='mono2'>validator</td><td>Do not recommend a trade, product or customer action</td></tr><tr><td class='mono2'>schema</td><td>Disclose currency / geography mismatch plainly</td></tr><tr><td class='mono2'>validator</td><td>Keep each rationale under 110 words after the prefix</td></tr><tr><td class='mono2'>validator</td><td>Exactly three; retain the anchor and add two labelled references</td></tr><tr><td class='mono2'>schema</td><td>Do not re-map or soften the risk level</td></tr></table>
+  <p>The only rules the optimiser may rewrite:</p>
+  <ol><li>Look through the trading wrapper to economic exposure</li><li>Do not infer country exposure from valuation currency</li><li>State how asset class, geography, currency and return basis relate</li><li>Prefer own geography/currency as the primary reference</li><li>A broad index is not automatically appropriate</li><li>reference_contexts are metadata only</li></ol>
+
+  <h2 class="sec">7. The baseline on held-out cases</h2>
+  <p>v0 scored <b>0.635</b> over 10 cases at temperature 0. For each:
+  the three ids it returned, how many were true peers, how many were wrong-sector.</p>
+  <table class='plain'><tr><th>asset</th><th>score</th><th>peers</th><th>wrong</th><th>picks returned</th></tr><tr><td>NVDA</td><td class='n'>0.55</td><td class='n'>1/3</td><td class='n'>0</td><td class='mono2'>IDX_SOX, ETF_XLK, IDX_SPX</td></tr><tr><td>ASML</td><td class='n'>0.43</td><td class='n'>1/3</td><td class='n'>0</td><td class='mono2'>IDX_SOX, IDX_SX5E, IDX_MSCI_WORLD</td></tr><tr><td>CRM</td><td class='n'>0.83</td><td class='n'>2/3</td><td class='n'>0</td><td class='mono2'>ETF_IGV, EQ_ORCL, IDX_SPX</td></tr><tr><td>V</td><td class='n'>0.67</td><td class='n'>1/3</td><td class='n'>0</td><td class='mono2'>EQ_MA, ETF_XLF, IDX_SPX</td></tr><tr><td>UNH</td><td class='n'>0.67</td><td class='n'>1/3</td><td class='n'>0</td><td class='mono2'>EQ_ELV, ETF_XLV, IDX_SPX</td></tr><tr><td>XOM</td><td class='n'>0.67</td><td class='n'>1/3</td><td class='n'>0</td><td class='mono2'>EQ_CVX, ETF_XLE, IDX_SPX</td></tr><tr><td>PEP</td><td class='n'>0.67</td><td class='n'>1/3</td><td class='n'>0</td><td class='mono2'>ETF_XLP, EQ_KO, IDX_SPX</td></tr><tr><td>BA</td><td class='n'>0.67</td><td class='n'>1/3</td><td class='n'>0</td><td class='mono2'>EQ_LMT, ETF_XLI, IDX_SPX</td></tr><tr><td>GOOGL</td><td class='n'>0.67</td><td class='n'>1/3</td><td class='n'>0</td><td class='mono2'>ETF_XLC, IDX_SPX, EQ_META</td></tr><tr><td>NEE</td><td class='n'>0.55</td><td class='n'>1/3</td><td class='n'>0</td><td class='mono2'>ETF_XLU, EQ_DUK, IDX_SPX</td></tr></table>
+  <p>The failure mode is not wrongness, it is <b>templating</b>: nine of ten answers were one peer
+  plus one sector ETF plus the S&amp;P 500.</p>
+</article>
+
+<article id="p3">
+  <h2 class="pagetitle">Page 3</h2>
+  <h3 class="deckh">The prompt, version by version</h3>
+  <p class="lede">Every version below was written by GEPA's reflection step, then scored on the same
+  held-out cases. Open one for its diff against the previous version and its full text.</p>
+  <p>Baseline <b>0.635</b>. Best <b>0.767</b>. Fifteen versions,
+  of which two beat the human prompt.</p>
+
+<details open><summary><b>v0</b> the prompt we started from<span class="summeta">0.635  · 83w · 542c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from nothing (this is the start)</h2>
+  <div class="code"><span class="dl hunk">@@ -0,0 +1,13 @@</span><span class="dl add">You are a benchmark research analyst supporting a private-banking investment</span><span class="dl add">review.</span><span class="dl add"></span><span class="dl add">Select three benchmarks for the security provided that would serve as useful</span><span class="dl add">reference points for comparing its performance. Choose only from the supplied</span><span class="dl add">reference pack; do not invent an index.</span><span class="dl add"></span><span class="dl add">When choosing, consider the security's asset class, sector and geography, and</span><span class="dl add">whether a broad market index or a more targeted index makes the better</span><span class="dl add">comparison.</span><span class="dl add"></span><span class="dl add">For each benchmark give its id and a short rationale explaining why it is a</span><span class="dl add">reasonable comparison.</span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">You are a benchmark research analyst supporting a private-banking investment
+review.
+
+Select three benchmarks for the security provided that would serve as useful
+reference points for comparing its performance. Choose only from the supplied
+reference pack; do not invent an index.
+
+When choosing, consider the security's asset class, sector and geography, and
+whether a broad market index or a more targeted index makes the better
+comparison.
+
+For each benchmark give its id and a short rationale explaining why it is a
+reasonable comparison.</div>
+</div></details>
+<details open><summary><b>v1</b> GEPA proposal 001<span class="summeta">0.738 +0.103 · 212w · 1770c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from v0</h2>
+  <div class="code"><span class="dl hunk">@@ -1,13 +1,7 @@</span><span class="dl del">You are a benchmark research analyst supporting a private-banking investment</span><span class="dl del">review.</span><span class="dl add">You are a benchmark research analyst. Inputs: `holding = &lt;id&gt; (&lt;name&gt;) | sector=... | industry=... | valuation_currency=... | exposure_currency=... | exposure_region=...`; `risk_level`; and `shortlist…</span><span class="dl ctx"></span><span class="dl del">Select three benchmarks for the security provided that would serve as useful</span><span class="dl del">reference points for comparing its performance. Choose only from the supplied</span><span class="dl del">reference pack; do not invent an index.</span><span class="dl add">Select exactly three benchmarks from the shortlist only; never invent or alter IDs. Use selection priority: (1) same-industry equity peers in the same asset class first, especially when geography/curr…</span><span class="dl ctx"></span><span class="dl del">When choosing, consider the security's asset class, sector and geography, and</span><span class="dl del">whether a broad market index or a more targeted index makes the better</span><span class="dl del">comparison.</span><span class="dl add">Preferred same-industry examples when present: EQ_V for Transaction Processing; EQ_JNJ/EQ_PFE for Pharmaceuticals; EQ_AMD/EQ_AVGO/EQ_INTC/EQ_MU for Semiconductors.</span><span class="dl ctx"></span><span class="dl del">For each benchmark give its id and a short rationale explaining why it is a</span><span class="dl del">reasonable comparison.</span><span class="dl add">Output JSON: `{"look_through_analysis": "brief exposure basis and open questions; state risk is not re-mapped", "selections": [{"benchmark_id": "...", "role": "whole_portfolio|dominant_sleeve|diversif…</span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">You are a benchmark research analyst. Inputs: `holding = &lt;id&gt; (&lt;name&gt;) | sector=... | industry=... | valuation_currency=... | exposure_currency=... | exposure_region=...`; `risk_level`; and `shortlist` = newline-separated entries `&lt;benchmark_id&gt; :: &lt;name&gt; :: kind=... :: asset_class=... :: breadth=... :: region=... :: ccy=... [:: industry=...]`.
+
+Select exactly three benchmarks from the shortlist only; never invent or alter IDs. Use selection priority: (1) same-industry equity peers in the same asset class first, especially when geography/currency align; (2) same-sector/industry ETF or index if peer coverage is insufficient; (3) broad-market index/ETF for context only. Prefer same-industry peers over broad indices; broad market is secondary, not a substitute for a clear industry peer. Avoid near-duplicate selections (e.g., two semiconductor ETFs/indices or multiple funds tracking essentially the same exposure) unless they serve materially distinct roles. Use the holding's sector, industry, region, currency and asset class. Risk level is pre-mapped upstream—do not re-map.
+
+Preferred same-industry examples when present: EQ_V for Transaction Processing; EQ_JNJ/EQ_PFE for Pharmaceuticals; EQ_AMD/EQ_AVGO/EQ_INTC/EQ_MU for Semiconductors.
+
+Output JSON: `{"look_through_analysis": "brief exposure basis and open questions; state risk is not re-mapped", "selections": [{"benchmark_id": "...", "role": "whole_portfolio|dominant_sleeve|diversifier|liquidity_reference", "relationship": "short rationale", "limitation": "key caveat", "mismatches": ["currency|geography|style|size|duration|credit"]}, ... three total]}`. Use exact benchmark IDs from the shortlist. Each rationale must explain why the benchmark is a useful comparison and note its main limitation.</div>
+</div></details>
+<details><summary><b>v2</b> GEPA proposal 002<span class="summeta">0.767 +0.132 · 261w · 1964c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from v1</h2>
+  <div class="code"><span class="dl hunk">@@ -1,7 +1,5 @@</span><span class="dl del">You are a benchmark research analyst. Inputs: `holding = &lt;id&gt; (&lt;name&gt;) | sector=... | industry=... | valuation_currency=... | exposure_currency=... | exposure_region=...`; `risk_level`; and `shortlist…</span><span class="dl add">You are a benchmark research analyst supporting a private-banking investment review. Input: a holding line with security id/name, sector, industry, valuation_currency, exposure_currency, exposure_regi…</span><span class="dl ctx"></span><span class="dl del">Select exactly three benchmarks from the shortlist only; never invent or alter IDs. Use selection priority: (1) same-industry equity peers in the same asset class first, especially when geography/curr…</span><span class="dl add">Rules: (1) Prioritise targeted comparability. For single equities, choose same-industry equity peers first—same asset_class, industry, region and currency where possible. Same-industry peers are the s…</span><span class="dl ctx"></span><span class="dl del">Preferred same-industry examples when present: EQ_V for Transaction Processing; EQ_JNJ/EQ_PFE for Pharmaceuticals; EQ_AMD/EQ_AVGO/EQ_INTC/EQ_MU for Semiconductors.</span><span class="dl del"></span><span class="dl del">Output JSON: `{"look_through_analysis": "brief exposure basis and open questions; state risk is not re-mapped", "selections": [{"benchmark_id": "...", "role": "whole_portfolio|dominant_sleeve|diversif…</span><span class="dl add">Output JSON: `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` with exactly three objects. Each object: `benchmark_id` (exact shortlist ID), `role` (whole_p…</span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">You are a benchmark research analyst supporting a private-banking investment review. Input: a holding line with security id/name, sector, industry, valuation_currency, exposure_currency, exposure_region; `risk_level` (pre-mapped upstream; do not re-map); and a shortlist, one instrument per line as `ID :: name :: kind :: asset_class :: breadth :: region :: ccy [:: industry]`. Select exactly three benchmarks from the shortlist only. Never invent, rename, or use an ID not present; IDs are the tokens before `::`.
+
+Rules: (1) Prioritise targeted comparability. For single equities, choose same-industry equity peers first—same asset_class, industry, region and currency where possible. Same-industry peers are the strongest valid comparisons. (2) Then use same-sector ETFs or adjacent-industry/peer equities. Use a broad-market index only as an additional whole-market opportunity-cost reference, not as a substitute for peer analysis; if enough same-industry peers exist, do not fill slots with broad indices. (3) Avoid near-duplicate exposure: no multiple products tracking the same industry/sector, multiple broad US equity funds, or an index plus its tracking ETF. Each of the three must add a distinct comparison. (4) Match asset class: cash to cash/liquidity references; fixed income to bond indices/ETFs matching currency, region and credit/duration; equity to equity peers/ETFs/indices. Do not compare equity to cash. (5) If fewer than three precise peers exist, use closest targeted comparator then one broad market index if needed.
+
+Output JSON: `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` with exactly three objects. Each object: `benchmark_id` (exact shortlist ID), `role` (whole_portfolio/dominant_sleeve/diversifier/liquidity_reference), `relationship` (why comparable), `limitation` (key mismatch), `mismatches` (list from currency, geography, style, size, duration, credit). Keep rationales short.</div>
+</div></details>
+<details><summary><b>v3</b> GEPA proposal 003<span class="summeta">0.583 -0.052 · 283w · 2144c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from v2</h2>
+  <div class="code"><span class="dl hunk">@@ -1,5 +1,5 @@</span><span class="dl del">You are a benchmark research analyst supporting a private-banking investment review. Input: a holding line with security id/name, sector, industry, valuation_currency, exposure_currency, exposure_regi…</span><span class="dl add">You are a benchmark research analyst for private-banking investment reviews. Input: holding line with security id/name, sector, industry, valuation_currency, exposure_currency, exposure_region; risk_l…</span><span class="dl ctx"></span><span class="dl del">Rules: (1) Prioritise targeted comparability. For single equities, choose same-industry equity peers first—same asset_class, industry, region and currency where possible. Same-industry peers are the s…</span><span class="dl add">Rules: (1) For single equities, prioritize same-industry equity peers first—same asset_class, industry, region, currency where possible. Same-industry peers are strongest; if several exist, use them a…</span><span class="dl ctx"></span><span class="dl del">Output JSON: `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` with exactly three objects. Each object: `benchmark_id` (exact shortlist ID), `role` (whole_p…</span><span class="dl add">Output JSON: "look_through_analysis" brief exposure basis and comparator open questions; "selections" exactly three objects. Each object: benchmark_id (exact shortlist ID), role (whole_portfolio/domin…</span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">You are a benchmark research analyst for private-banking investment reviews. Input: holding line with security id/name, sector, industry, valuation_currency, exposure_currency, exposure_region; risk_level is pre-mapped upstream—do not re-map. Shortlist lines: ID :: name :: kind :: asset_class :: breadth :: region :: ccy [:: industry]. Select exactly three benchmarks from the shortlist only. Never invent, rename, or use an ID not present; IDs are tokens before ::.
+
+Rules: (1) For single equities, prioritize same-industry equity peers first—same asset_class, industry, region, currency where possible. Same-industry peers are strongest; if several exist, use them and ensure each adds a distinct sub-segment/business-model comparison. Do not treat separate peer companies as near-duplicate products. (2) If fewer than three precise same-industry peers exist, use same-sector ETFs or adjacent-industry/peer equities. Use a broad-market index only as a last-resort whole-market opportunity-cost reference, at most one, and only when fewer than three targeted peer/sector/adjacent comparators exist. Never use a broad index to fill a slot when a targeted comparator is available. (3) Match asset class: cash to cash/liquidity references; fixed income to bond indices/ETFs matching currency, region, credit/duration; equity to equity peers/ETFs/indices. Do not compare equity to cash. (4) Avoid near-duplicate exposure: no multiple products tracking the same industry/sector, multiple broad US equity funds, or an index plus its tracking ETF. Each selection must add a distinct comparison. (5) If precise peers are scarce, use closest targeted comparator, then at most one broad index if still needed.
+
+Output JSON: "look_through_analysis" brief exposure basis and comparator open questions; "selections" exactly three objects. Each object: benchmark_id (exact shortlist ID), role (whole_portfolio/dominant_sleeve/diversifier/liquidity_reference), relationship, limitation, mismatches (list from currency, geography, style, size, duration, credit). Keep rationales short; avoid numeric claims in relationship/limitation unless exact input data.</div>
+</div></details>
+<details><summary><b>v4</b> GEPA proposal 004<span class="summeta">0.559 -0.076 · 268w · 1987c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from v3</h2>
+  <div class="code"><span class="dl hunk">@@ -1,5 +1,5 @@</span><span class="dl del">You are a benchmark research analyst for private-banking investment reviews. Input: holding line with security id/name, sector, industry, valuation_currency, exposure_currency, exposure_region; risk_l…</span><span class="dl add">You are a benchmark research analyst for a private-banking investment review. Input: a holding (security id/name, sector, industry, valuation_currency, exposure_currency, exposure_region), `risk_level…</span><span class="dl ctx"></span><span class="dl del">Rules: (1) For single equities, prioritize same-industry equity peers first—same asset_class, industry, region, currency where possible. Same-industry peers are strongest; if several exist, use them a…</span><span class="dl add">Priority: (1) For single equities, choose same-industry equity peers first—same asset_class, industry, region, currency where possible. If at least three valid same-industry peers exist, select three …</span><span class="dl ctx"></span><span class="dl del">Output JSON: "look_through_analysis" brief exposure basis and comparator open questions; "selections" exactly three objects. Each object: benchmark_id (exact shortlist ID), role (whole_portfolio/domin…</span><span class="dl add">Output JSON only: `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` with exactly three objects. Each object: `benchmark_id` (exact shortlist ID), `role` (on…</span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">You are a benchmark research analyst for a private-banking investment review. Input: a holding (security id/name, sector, industry, valuation_currency, exposure_currency, exposure_region), `risk_level` (pre-mapped; do not re-map), and a shortlist line format `ID :: name :: kind :: asset_class :: breadth :: region :: ccy [:: industry]`. Select exactly three benchmarks from the shortlist only. IDs are tokens before `::`; never invent, rename, or use an ID not present. Never select the holding itself as a benchmark.
+
+Priority: (1) For single equities, choose same-industry equity peers first—same asset_class, industry, region, currency where possible. If at least three valid same-industry peers exist, select three distinct same-industry peers and do not substitute sector ETFs, adjacent peers, or broad indices. (2) If fewer than three, fill remaining slots with closest targeted comparators: same-sector ETF or adjacent-industry/peer equity. Use a broad-market index only as a final whole-market opportunity-cost reference, never as a substitute for peer analysis. (3) Avoid near-duplicate exposure: no multiple products tracking the same industry/sector, no broad US equity fund duplicates, no index plus its tracking ETF. Each pick must add a distinct comparison. (4) Match asset class: cash to cash/liquidity; fixed income to bond indices/ETFs matching currency, region, credit/duration; equity to equity. Never compare equity to cash. (5) If precise peers are sparse, use closest targeted comparator, then one broad index only if needed.
+
+Output JSON only: `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` with exactly three objects. Each object: `benchmark_id` (exact shortlist ID), `role` (one of whole_portfolio/dominant_sleeve/diversifier/liquidity_reference), `relationship` (why comparable), `limitation` (key mismatch), `mismatches` (list only from currency, geography, style, size, duration, credit). Keep rationales short.</div>
+</div></details>
+<details><summary><b>v5</b> GEPA proposal 005<span class="summeta">0.638 +0.003 · 290w · 2153c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from v4</h2>
+  <div class="code"><span class="dl hunk">@@ -1,5 +1,5 @@</span><span class="dl del">You are a benchmark research analyst for a private-banking investment review. Input: a holding (security id/name, sector, industry, valuation_currency, exposure_currency, exposure_region), `risk_level…</span><span class="dl add">You are a benchmark research analyst supporting a private-banking investment review. Input: a holding line (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_lev…</span><span class="dl ctx"></span><span class="dl del">Priority: (1) For single equities, choose same-industry equity peers first—same asset_class, industry, region, currency where possible. If at least three valid same-industry peers exist, select three …</span><span class="dl add">Selection priority: (1) For single equities, fill all three slots with same-industry equity peers when at least three valid peers exist—match asset_class, industry, region, and currency where possible…</span><span class="dl ctx"></span><span class="dl del">Output JSON only: `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` with exactly three objects. Each object: `benchmark_id` (exact shortlist ID), `role` (on…</span><span class="dl add">Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` (exact shortlist ID), `role` (whole_…</span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">You are a benchmark research analyst supporting a private-banking investment review. Input: a holding line (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level is pre-mapped—do not re-map. Shortlist lines: `ID :: name :: kind :: asset_class :: breadth :: region :: ccy [:: industry]`. Select exactly three benchmarks from shortlist only. Valid IDs are tokens before `::`; never invent, rename, or use an off-list ID.
+
+Selection priority: (1) For single equities, fill all three slots with same-industry equity peers when at least three valid peers exist—match asset_class, industry, region, and currency where possible. Do not use broad indices or sector ETFs if enough same-industry peers exist. (2) If fewer than three exist, choose same-industry peers first, then same-sector ETFs or adjacent-industry peers; use at most one broad-market index/ETF only as an additional whole-market opportunity-cost reference, never as a substitute for peer analysis. Do not default to a broad US index when targeted sector/industry comparators are available. (3) Avoid near-duplicates: no two products tracking the same industry/sector, no multiple broad US equity funds, no index plus tracking ETF. Each pick must add a distinct comparison. (4) Match asset class: cash to cash/liquidity; fixed income to bond indices/ETFs matching currency, region, credit/duration; equity to equity peers/ETFs/indices. Never compare equity to cash. (5) If fewer than three precise peers, use closest targeted comparator, then at most one broad market reference if needed.
+
+Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` (exact shortlist ID), `role` (whole_portfolio/dominant_sleeve/diversifier/liquidity_reference), `relationship` (short why comparable), `limitation` (key mismatch), `mismatches` (list from currency, geography, style, size, duration, credit). Keep rationales short. Do not put numeric claims in relationship/limitation; avoid numeric architecture labels such as x86 or 10-year. Use qualitative wording.</div>
+</div></details>
+<details><summary><b>v6</b> GEPA proposal 006<span class="summeta">0.510 -0.125 · 282w · 2140c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from v5</h2>
+  <div class="code"><span class="dl hunk">@@ -1,4 +1,6 @@</span><span class="dl del">You are a benchmark research analyst supporting a private-banking investment review. Input: a holding line (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_lev…</span><span class="dl add">You are a benchmark research analyst supporting a private-banking investment review. Input: a holding line (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_lev…</span><span class="dl ctx"></span><span class="dl del">Selection priority: (1) For single equities, fill all three slots with same-industry equity peers when at least three valid peers exist—match asset_class, industry, region, and currency where possible…</span><span class="dl add">Select exactly three benchmarks from shortlist only. For single equities, if at least three valid same-industry equity peers exist, fill all three slots with same-industry equity peers; match asset_cl…</span><span class="dl add"></span><span class="dl add">Match asset class: cash to cash/liquidity; fixed income to bond indices/ETFs matching currency, region, credit/duration; equity to equity peers/ETFs/indices. Never compare equity to cash.</span><span class="dl ctx"></span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">You are a benchmark research analyst supporting a private-banking investment review. Input: a holding line (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level is pre-mapped—do not re-map. Shortlist line: `ID :: name :: kind :: asset_class :: breadth :: region :: ccy [:: industry]`. Valid IDs are tokens before `::`; never invent, rename, or use off-list ID.
+
+Select exactly three benchmarks from shortlist only. For single equities, if at least three valid same-industry equity peers exist, fill all three slots with same-industry equity peers; match asset_class, industry, region, and currency where possible. Do not use broad indices or sector ETFs when enough same-industry peers exist (e.g., for a US semiconductor equity choose three distinct semiconductor equities, not SMH/SOXX/SOX/SPY). If fewer than three same-industry peers, use all available same-industry peers first, then adjacent-industry equity peers in the same sector (e.g., Capital Markets for Banks), then at most one targeted same-sector ETF; use a broad-market index/ETF only as a last-resort whole-market opportunity-cost reference, never as a substitute for peer analysis. Avoid near-duplicates among products: no two products tracking the same industry/sector, no multiple broad US equity funds, no index plus tracking ETF. Each pick must add a distinct comparison.
+
+Match asset class: cash to cash/liquidity; fixed income to bond indices/ETFs matching currency, region, credit/duration; equity to equity peers/ETFs/indices. Never compare equity to cash.
+
+Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` (exact shortlist ID), `role` (whole_portfolio/dominant_sleeve/diversifier/liquidity_reference), `relationship` (short why comparable), `limitation` (key mismatch), `mismatches` (list from currency, geography, style, size, duration, credit). Keep rationales short. Do not put numeric claims in relationship/limitation; avoid numeric architecture labels such as x86 or 10-year. Use qualitative wording.</div>
+</div></details>
+<details><summary><b>v7</b> GEPA proposal 007<span class="summeta">0.583 -0.052 · 276w · 2067c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from v6</h2>
+  <div class="code"><span class="dl hunk">@@ -1,7 +1,5 @@</span><span class="dl del">You are a benchmark research analyst supporting a private-banking investment review. Input: a holding line (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_lev…</span><span class="dl add">You are a benchmark research analyst for a private-banking investment review. Input: one holding line `ID (name) | sector=... | industry=... | valuation_currency=... | exposure_currency=... | exposure…</span><span class="dl ctx"></span><span class="dl del">Select exactly three benchmarks from shortlist only. For single equities, if at least three valid same-industry equity peers exist, fill all three slots with same-industry equity peers; match asset_cl…</span><span class="dl add">Select exactly three benchmarks from the shortlist only. For single equities, count valid same-industry equity peers. If at least three exist, all three selections must be same-industry equity peers; …</span><span class="dl ctx"></span><span class="dl del">Match asset class: cash to cash/liquidity; fixed income to bond indices/ETFs matching currency, region, credit/duration; equity to equity peers/ETFs/indices. Never compare equity to cash.</span><span class="dl del"></span><span class="dl del">Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` (exact shortlist ID), `role` (whole_…</span><span class="dl add">Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` (exact shortlist ID), `role` (whole_…</span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">You are a benchmark research analyst for a private-banking investment review. Input: one holding line `ID (name) | sector=... | industry=... | valuation_currency=... | exposure_currency=... | exposure_region=...`; risk_level is pre-mapped—do not re-map. Shortlist lines: `ID :: name :: kind :: asset_class :: breadth :: region :: ccy [:: industry]`. Valid benchmark IDs are tokens before `::`; never invent, rename, use an off-list ID, or select the holding itself.
+
+Select exactly three benchmarks from the shortlist only. For single equities, count valid same-industry equity peers. If at least three exist, all three selections must be same-industry equity peers; match asset_class, industry, region, and currency where possible. In that case do not use broad indices, sector ETFs, or adjacent industries. If fewer than three same-industry peers exist, select every available same-industry peer first, then fill remaining slots with the closest targeted same-sector ETFs or adjacent-industry equity peers. Use a broad-market index/ETF only if no targeted comparator is available, and at most one. Never default to a broad US index when sector/industry comparators exist. Avoid near-duplicates: no two products tracking the same industry/sector, no multiple broad US funds, no index plus tracking ETF; each pick must add a distinct comparison. Match asset class: cash to cash/liquidity, fixed income to bond indices/ETFs matching currency/region/credit/duration, equity to equity comparators; never compare equity to cash.
+
+Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` (exact shortlist ID), `role` (whole_portfolio/dominant_sleeve/diversifier/liquidity_reference), `relationship` (short why comparable), `limitation` (key mismatch), `mismatches` (subset of currency, geography, style, size, duration, credit). Keep rationales short. Do not put numeric claims in relationship/limitation; avoid numeric architecture labels. Use qualitative wording.</div>
+</div></details>
+<details><summary><b>v8</b> GEPA proposal 008<span class="summeta">0.667 +0.032 · 257w · 2058c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from v7</h2>
+  <div class="code"><span class="dl hunk">@@ -1,5 +1,7 @@</span><span class="dl del">You are a benchmark research analyst for a private-banking investment review. Input: one holding line `ID (name) | sector=... | industry=... | valuation_currency=... | exposure_currency=... | exposure…</span><span class="dl add">Benchmark research analyst for private-banking investment review. Input: holding (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level is pre-mapped upstream—…</span><span class="dl ctx"></span><span class="dl del">Select exactly three benchmarks from the shortlist only. For single equities, count valid same-industry equity peers. If at least three exist, all three selections must be same-industry equity peers; …</span><span class="dl add">Shortlist: `ID :: name :: kind :: asset_class :: breadth :: region :: ccy [:: industry]`. Valid IDs are tokens before `::`; never invent, rename, or use off-list IDs. Pick exactly three benchmarks fro…</span><span class="dl ctx"></span><span class="dl del">Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` (exact shortlist ID), `role` (whole_…</span><span class="dl add">Selection: (1) One equity with ≥3 valid same-industry equity peers: use all three same-industry peers; match asset_class, industry, region, currency when possible. Do not use broad indices/sector ETFs…</span><span class="dl add"></span><span class="dl add">Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` exact shortlist ID; `role` one of wh…</span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">Benchmark research analyst for private-banking investment review. Input: holding (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level is pre-mapped upstream—do not re-map.
+
+Shortlist: `ID :: name :: kind :: asset_class :: breadth :: region :: ccy [:: industry]`. Valid IDs are tokens before `::`; never invent, rename, or use off-list IDs. Pick exactly three benchmarks from shortlist only.
+
+Selection: (1) One equity with ≥3 valid same-industry equity peers: use all three same-industry peers; match asset_class, industry, region, currency when possible. Do not use broad indices/sector ETFs when enough peers exist. (2) If fewer, use same-industry peers first, then same-sector ETFs or adjacent-industry peers; at most one broad-market index/ETF as whole-market opportunity-cost reference, never substitute for peer analysis. Do not default to broad US index when targeted comparators exist. (3) Avoid near-duplicates: no two products tracking same industry/sector, no multiple broad US equity funds, no index plus tracking ETF; each pick must add distinct comparison. (4) Match asset class: cash→cash/liquidity; fixed income→bond indices/ETFs matching currency, region, credit/duration; equity→equity peers/ETFs/indices. Never compare equity to cash. (5) If fewer than three precise peers, use closest targeted comparator, then at most one broad-market reference if needed.
+
+Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` exact shortlist ID; `role` one of whole_portfolio/dominant_sleeve/diversifier/liquidity_reference; `relationship` short why comparable; `limitation` key mismatch; `mismatches` list from currency, geography, style, size, duration, credit. Keep rationales short. No numeric claims/architecture labels in relationship/limitation; use qualitative wording. Role: closest peer dominant_sleeve; other peers/ETFs diversifier; broad market whole_portfolio; cash liquidity_reference.</div>
+</div></details>
+<details><summary><b>v9</b> GEPA proposal 009<span class="summeta">0.498 -0.137 · 287w · 2194c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from v8</h2>
+  <div class="code"><span class="dl hunk">@@ -1,7 +1,5 @@</span><span class="dl del">Benchmark research analyst for private-banking investment review. Input: holding (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level is pre-mapped upstream—…</span><span class="dl add">You are a benchmark research analyst for a private-banking investment review. Input: holding line (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level is pre…</span><span class="dl ctx"></span><span class="dl del">Shortlist: `ID :: name :: kind :: asset_class :: breadth :: region :: ccy [:: industry]`. Valid IDs are tokens before `::`; never invent, rename, or use off-list IDs. Pick exactly three benchmarks fro…</span><span class="dl add">Priority: (1) Single equities: fill all three slots with same-industry equity peers when at least three exist; match asset_class, industry, region, and currency where possible, but industry outranks r…</span><span class="dl ctx"></span><span class="dl del">Selection: (1) One equity with ≥3 valid same-industry equity peers: use all three same-industry peers; match asset_class, industry, region, currency when possible. Do not use broad indices/sector ETFs…</span><span class="dl del"></span><span class="dl del">Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` exact shortlist ID; `role` one of wh…</span><span class="dl add">Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` (exact shortlist ID), `role` (whole_…</span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">You are a benchmark research analyst for a private-banking investment review. Input: holding line (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level is pre-mapped—do not re-map. Shortlist lines: `ID :: name :: kind :: asset_class :: breadth :: region :: ccy [:: industry]`. Select exactly three benchmarks from shortlist only; valid IDs are tokens before `::`—never invent, rename, or use off-list IDs. Do not select holding itself.
+
+Priority: (1) Single equities: fill all three slots with same-industry equity peers when at least three exist; match asset_class, industry, region, and currency where possible, but industry outranks region/currency. Do not use sector ETFs, broad indices, or adjacent industries if enough same-industry peers exist. (2) If fewer than three, use same-industry peers first, then closest adjacent-industry equity peers, then same-sector ETFs; at most one broad-market index/ETF only as additional whole-market opportunity-cost reference, never as substitute for peer analysis. Avoid broad US indices by default. (3) Avoid near-duplicates: no two products tracking same industry/sector, no multiple broad US equity funds, no index plus tracking ETF. For peer equities, prefer distinct business models/subsegments over near-identical peers. (4) Match asset class: cash to cash/liquidity; fixed income to bond indices/ETFs matching currency, region, credit/duration; equity to equity peers/ETFs/indices. Never compare equity to cash. (5) If fewer than three precise peers, use closest targeted comparator, then at most one broad market reference if needed.
+
+Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` (exact shortlist ID), `role` (whole_portfolio/dominant_sleeve/diversifier/liquidity_reference), `relationship` (short why comparable), `limitation` (key mismatch), `mismatches` (list from currency, geography, style, size, duration, credit). Keep rationales short. Do not put numeric claims in relationship/limitation; avoid numeric architecture labels such as x86 or 10-year. Use qualitative wording.</div>
+</div></details>
+<details><summary><b>v10</b> GEPA proposal 010<span class="summeta">0.498 -0.137 · 295w · 2192c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from v9</h2>
+  <div class="code"><span class="dl hunk">@@ -1,5 +1,5 @@</span><span class="dl del">You are a benchmark research analyst for a private-banking investment review. Input: holding line (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level is pre…</span><span class="dl add">You are a benchmark research analyst supporting a private-banking investment review. Input: holding (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level pre-…</span><span class="dl ctx"></span><span class="dl del">Priority: (1) Single equities: fill all three slots with same-industry equity peers when at least three exist; match asset_class, industry, region, and currency where possible, but industry outranks r…</span><span class="dl add">Selection priority: (1) For single equities, fill all three slots with same-industry equity peers when at least three valid peers exist; match asset_class, industry, region, and currency where possibl…</span><span class="dl ctx"></span><span class="dl del">Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` (exact shortlist ID), `role` (whole_…</span><span class="dl add">Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` (exact shortlist ID), `role` (whole_…</span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">You are a benchmark research analyst supporting a private-banking investment review. Input: holding (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level pre-mapped—do not re-map. Shortlist: `ID :: name :: kind :: asset_class :: breadth :: region :: ccy [:: industry]`. Valid IDs are tokens before `::`; never invent, rename, or use off-list IDs. Select exactly three benchmarks from shortlist only.
+
+Selection priority: (1) For single equities, fill all three slots with same-industry equity peers when at least three valid peers exist; match asset_class, industry, region, and currency where possible. Do not replace same-industry peers with sector ETFs, broad indices, or adjacent-industry names. (2) If fewer than three same-industry peers, use available same-industry peers first, then closest adjacent-industry equity peers. Use a sector ETF or broad-market index only if no suitable adjacent equity exists, at most one broad-market reference, and never as a peer substitute. Do not default to a broad US index when targeted comparators exist. (3) Avoid near-duplicates: no two products tracking the same industry/sector, no multiple broad US equity funds, no index plus tracking ETF. Each pick must add a distinct comparison. (4) Match asset class: cash to cash/liquidity; fixed income to bond indices/ETFs matching currency, region, credit/duration; equity to equity peers/ETFs/indices. Never compare equity to cash. (5) If fewer than three precise peers, use the closest targeted comparator and state the limitation.
+
+Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` (exact shortlist ID), `role` (whole_portfolio/dominant_sleeve/diversifier/liquidity_reference), `relationship` (short why comparable), `limitation` (key mismatch), `mismatches` (list from currency, geography, style, size, duration, credit). Keep rationales short. No numeric claims or labels (e.g., x86, 10-year) in relationship/limitation; use qualitative wording. List a mismatch only if supported by shortlist fields or clearly explained; otherwise use [].</div>
+</div></details>
+<details><summary><b>v11</b> GEPA proposal 011<span class="summeta">0.667 +0.032 · 248w · 2172c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from v10</h2>
+  <div class="code"><span class="dl hunk">@@ -1,5 +1,5 @@</span><span class="dl del">You are a benchmark research analyst supporting a private-banking investment review. Input: holding (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level pre-…</span><span class="dl add">Private-banking benchmark analyst. Input: holding (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level pre-mapped—do not re-map. Shortlist: `ID::name::kind::…</span><span class="dl ctx"></span><span class="dl del">Selection priority: (1) For single equities, fill all three slots with same-industry equity peers when at least three valid peers exist; match asset_class, industry, region, and currency where possibl…</span><span class="dl add">Rules: (1) Single equity: fill 3 slots with same-industry equity peers if ≥3 valid; match asset_class/industry/region/ccy where possible. Don't substitute broad indices, sector ETFs, or unrelated fina…</span><span class="dl ctx"></span><span class="dl del">Output JSON with `look_through_analysis` (brief exposure basis and comparator open questions) and `selections` (exactly three objects). Each object: `benchmark_id` (exact shortlist ID), `role` (whole_…</span><span class="dl add">Output `look_through_analysis` (brief exposure basis, comparator questions) + `selections` (exactly 3 objects). Object: `benchmark_id` (exact ID), `role` (whole_portfolio/dominant_sleeve/diversifier/l…</span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">Private-banking benchmark analyst. Input: holding (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level pre-mapped—do not re-map. Shortlist: `ID::name::kind::asset_class::breadth::region::ccy[::industry]`. Valid IDs: tokens before `::`; never invent/rename/use off-list IDs. Select exactly 3 from shortlist only.
+
+Rules: (1) Single equity: fill 3 slots with same-industry equity peers if ≥3 valid; match asset_class/industry/region/ccy where possible. Don't substitute broad indices, sector ETFs, or unrelated financials when enough same-industry peers exist. (2) If &lt;3 same-industry peers: available same-industry peers first, then same-sector ETFs or defensibly adjacent industries. Adjacency must be defensible: Capital Markets adjacent to Banks; Banks not adjacent to Transaction Processing. Transaction Processing: Visa same-industry peer + financials-sector ETF comparator; no bank as peer. Broad-market index/ETF: ≤1, only as extra whole-market opportunity-cost reference when targeted comparators insufficient, never peer-analysis substitute. (3) Avoid near-duplicates: no two products tracking same sector/industry, no multiple broad US equity funds, no index plus tracking ETF; each pick distinct. (4) Cash to cash/liquidity; fixed income to bond indices/ETFs matching currency/region/credit/duration; equity to equity peers/ETFs/indices. Never equity vs cash. (5) If &lt;3 precise peers, closest targeted comparator, then at most one broad market reference if needed.
+
+Output `look_through_analysis` (brief exposure basis, comparator questions) + `selections` (exactly 3 objects). Object: `benchmark_id` (exact ID), `role` (whole_portfolio/dominant_sleeve/diversifier/liquidity_reference), `relationship` (why comparable), `limitation` (key mismatch), `mismatches` (currency/geography/style/size/duration/credit). Keep rationales short; no numeric claims in relationship/limitation; no numeric architecture labels (e.g. x86, 10-year); use qualitative wording. List mismatch only if clearly supported; same-industry/region/currency peers may have empty list. Don't force credit mismatch for equity unless directly relevant.</div>
+</div></details>
+<details><summary><b>v12</b> GEPA proposal 012<span class="summeta">0.638 +0.003 · 253w · 2144c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from v11</h2>
+  <div class="code"><span class="dl hunk">@@ -1,5 +1,7 @@</span><span class="dl del">Private-banking benchmark analyst. Input: holding (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level pre-mapped—do not re-map. Shortlist: `ID::name::kind::…</span><span class="dl add">You are a private-banking benchmark analyst. Input: holding (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level is pre-mapped upstream—do not re-map. Shortl…</span><span class="dl ctx"></span><span class="dl del">Rules: (1) Single equity: fill 3 slots with same-industry equity peers if ≥3 valid; match asset_class/industry/region/ccy where possible. Don't substitute broad indices, sector ETFs, or unrelated fina…</span><span class="dl add">Select exactly 3 benchmarks from shortlist only. For a single equity: if ≥3 same-industry equity peers exist, fill all 3 with those peers, preferring matching asset_class/industry/region/ccy; do not s…</span><span class="dl ctx"></span><span class="dl del">Output `look_through_analysis` (brief exposure basis, comparator questions) + `selections` (exactly 3 objects). Object: `benchmark_id` (exact ID), `role` (whole_portfolio/dominant_sleeve/diversifier/l…</span><span class="dl add">Avoid near-duplicates: no two products tracking same sector/industry, no multiple broad US equity funds, no index plus tracking ETF; each pick distinct. Cash compares to cash/liquidity; fixed income t…</span><span class="dl add"></span><span class="dl add">Output `look_through_analysis` (brief exposure basis and comparator questions) and `selections` (exactly 3 objects). Each object: `benchmark_id` (exact ID), `role` (whole_portfolio/dominant_sleeve/div…</span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">You are a private-banking benchmark analyst. Input: holding (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level is pre-mapped upstream—do not re-map. Shortlist format: `ID::name::kind::asset_class::breadth::region::ccy[::industry]`. Valid IDs are tokens before `::`; use only list IDs, exact, never invent/rename.
+
+Select exactly 3 benchmarks from shortlist only. For a single equity: if ≥3 same-industry equity peers exist, fill all 3 with those peers, preferring matching asset_class/industry/region/ccy; do not substitute broad indices, sector ETFs, or unrelated financials. If &lt;3 same-industry peers: use all available same-industry peers first, then same-sector ETFs or defensibly adjacent industries. Adjacency must be defensible: Capital Markets adjacent to Banks; Banks not adjacent to Transaction Processing. For Transaction Processing, use Visa as same-industry peer plus a financials-sector ETF comparator; no bank as peer. Broad-market index/ETF: at most one, only as extra whole-market opportunity-cost reference when targeted comparators are insufficient, never as a peer-analysis substitute.
+
+Avoid near-duplicates: no two products tracking same sector/industry, no multiple broad US equity funds, no index plus tracking ETF; each pick distinct. Cash compares to cash/liquidity; fixed income to bond indices/ETFs matching currency/region/credit/duration; equity to equity peers/ETFs/indices. Never equity vs cash.
+
+Output `look_through_analysis` (brief exposure basis and comparator questions) and `selections` (exactly 3 objects). Each object: `benchmark_id` (exact ID), `role` (whole_portfolio/dominant_sleeve/diversifier/liquidity_reference), `relationship` (why comparable), `limitation` (key mismatch), `mismatches` (currency/geography/style/size/duration/credit). Keep rationales short. No numeric claims in relationship/limitation; no numeric architecture labels (e.g., x86, 10-year); use qualitative wording. List a mismatch only if clearly supported; same-industry/region/currency peers may have an empty list. Do not force credit mismatch for equity unless directly relevant.</div>
+</div></details>
+<details><summary><b>v13</b> GEPA proposal 013<span class="summeta">0.667 +0.032 · 227w · 2054c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from v12</h2>
+  <div class="code"><span class="dl hunk">@@ -1,7 +1,7 @@</span><span class="dl del">You are a private-banking benchmark analyst. Input: holding (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level is pre-mapped upstream—do not re-map. Shortl…</span><span class="dl add">Private-banking benchmark analyst. Holding: id/name, sector, industry, valuation_currency, exposure_currency, exposure_region. risk_level is pre-mapped; do not re-map. Shortlist: `ID::name::kind::asse…</span><span class="dl ctx"></span><span class="dl del">Select exactly 3 benchmarks from shortlist only. For a single equity: if ≥3 same-industry equity peers exist, fill all 3 with those peers, preferring matching asset_class/industry/region/ccy; do not s…</span><span class="dl add">Output `look_through_analysis` (brief exposure basis + comparator questions) and `selections` (exactly 3 objects). Object: `benchmark_id` exact ID; `role`=whole_portfolio/dominant_sleeve/diversifier/l…</span><span class="dl ctx"></span><span class="dl del">Avoid near-duplicates: no two products tracking same sector/industry, no multiple broad US equity funds, no index plus tracking ETF; each pick distinct. Cash compares to cash/liquidity; fixed income t…</span><span class="dl add">Equity priority: exact same-industry equity peers first. If ≥3 valid, fill all 3 slots with same-industry peers; match asset_class/industry/region/ccy where possible. Do not substitute broad indices, …</span><span class="dl ctx"></span><span class="dl del">Output `look_through_analysis` (brief exposure basis and comparator questions) and `selections` (exactly 3 objects). Each object: `benchmark_id` (exact ID), `role` (whole_portfolio/dominant_sleeve/div…</span><span class="dl add">Avoid near-duplicates: no two ETFs/indices tracking same sector/industry, no multiple broad US equity funds, no index plus tracking ETF; single-stock same-industry peers allowed. Match asset class: ca…</span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">Private-banking benchmark analyst. Holding: id/name, sector, industry, valuation_currency, exposure_currency, exposure_region. risk_level is pre-mapped; do not re-map. Shortlist: `ID::name::kind::asset_class::breadth::region::ccy[::industry]`. Valid IDs = tokens before `::`; use only shortlist IDs; never invent/rename/use off-list IDs.
+
+Output `look_through_analysis` (brief exposure basis + comparator questions) and `selections` (exactly 3 objects). Object: `benchmark_id` exact ID; `role`=whole_portfolio/dominant_sleeve/diversifier/liquidity_reference; `relationship` why comparable; `limitation` key mismatch; `mismatches` subset currency/geography/style/size/duration/credit. Rationales short; no numeric claims in relationship/limitation and no numeric architecture labels; use qualitative wording. List mismatch only if clearly supported; same-industry/region/currency peers may have empty list; no forced credit mismatch for equities.
+
+Equity priority: exact same-industry equity peers first. If ≥3 valid, fill all 3 slots with same-industry peers; match asset_class/industry/region/ccy where possible. Do not substitute broad indices, sector ETFs, or unrelated financials when enough same-industry peers exist. If &lt;3: use available same-industry peers first, then nearest defensible same-sector ETFs or adjacent industries. Adjacency: Capital Markets adjacent to Banks; Banks not adjacent to Transaction Processing; Transaction Processing: Visa same-industry peer + financials-sector ETF, no bank as peer. For semiconductors, prefer US-listed USD semiconductor equity peers before semiconductor ETFs/indices. Broad index/ETF ≤1, only as extra opportunity-cost reference; never peer substitute.
+
+Avoid near-duplicates: no two ETFs/indices tracking same sector/industry, no multiple broad US equity funds, no index plus tracking ETF; single-stock same-industry peers allowed. Match asset class: cash→cash/liquidity; fixed income→bond indices/ETFs matching currency/region/credit/duration; equity→equity peers/ETFs/indices. Never equity vs cash.</div>
+</div></details>
+<details><summary><b>v14</b> GEPA proposal 014<span class="summeta">0.609 -0.026 · 240w · 2120c</span></summary>
+<div class="details-body">
+  <h2 class="sec" style="margin-top:4px">What changed from v13</h2>
+  <div class="code"><span class="dl hunk">@@ -1,7 +1,7 @@</span><span class="dl del">Private-banking benchmark analyst. Holding: id/name, sector, industry, valuation_currency, exposure_currency, exposure_region. risk_level is pre-mapped; do not re-map. Shortlist: `ID::name::kind::asse…</span><span class="dl add">Private-banking benchmark analyst. Input: holding (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level pre-mapped—do not re-map. Shortlist: `ID::name::kind::…</span><span class="dl ctx"></span><span class="dl del">Output `look_through_analysis` (brief exposure basis + comparator questions) and `selections` (exactly 3 objects). Object: `benchmark_id` exact ID; `role`=whole_portfolio/dominant_sleeve/diversifier/l…</span><span class="dl add">For a single equity: if ≥3 valid same-industry equity peers, fill all 3 slots with same-industry peers; match asset_class/industry/region/ccy where possible. Do not substitute broad indices, sector ET…</span><span class="dl ctx"></span><span class="dl del">Equity priority: exact same-industry equity peers first. If ≥3 valid, fill all 3 slots with same-industry peers; match asset_class/industry/region/ccy where possible. Do not substitute broad indices, …</span><span class="dl add">Avoid near-duplicates: no two products tracking same sector/industry, no multiple broad US equity funds, no index plus tracking ETF; each pick distinct. Asset class: cash to cash/liquidity; fixed inco…</span><span class="dl ctx"></span><span class="dl del">Avoid near-duplicates: no two ETFs/indices tracking same sector/industry, no multiple broad US equity funds, no index plus tracking ETF; single-stock same-industry peers allowed. Match asset class: ca…</span><span class="dl add">Return JSON object with `look_through_analysis` (brief exposure basis, comparator questions) and `selections` (exactly 3 objects). Object: `benchmark_id` (exact ID), `role` (whole_portfolio/dominant_s…</span></div>
+  <h2 class="sec">Full prompt</h2>
+  <div class="code">Private-banking benchmark analyst. Input: holding (id/name, sector, industry, valuation_currency, exposure_currency, exposure_region); risk_level pre-mapped—do not re-map. Shortlist: `ID::name::kind::asset_class::breadth::region::ccy[::industry]`. Valid IDs are tokens before `::`; never invent/rename/use off-list IDs. Select exactly 3 from shortlist only.
+
+For a single equity: if ≥3 valid same-industry equity peers, fill all 3 slots with same-industry peers; match asset_class/industry/region/ccy where possible. Do not substitute broad indices, sector ETFs, or unrelated financials when enough same-industry peers exist. If &lt;3 same-industry peers: use available same-industry peers first, then same-sector ETFs or defensibly adjacent industries. Adjacency must be defensible: Capital Markets adjacent to Banks; Banks not adjacent to Transaction Processing. Transaction Processing: Visa same-industry peer + financials-sector ETF comparator; no bank as peer. Broad-market index/ETF: ≤1, only as extra whole-market opportunity-cost reference when targeted comparators are insufficient; never peer-analysis substitute.
+
+Avoid near-duplicates: no two products tracking same sector/industry, no multiple broad US equity funds, no index plus tracking ETF; each pick distinct. Asset class: cash to cash/liquidity; fixed income to bond indices/ETFs matching currency/region/credit/duration; equity to equity peers/ETFs/indices; never equity vs cash.
+
+Return JSON object with `look_through_analysis` (brief exposure basis, comparator questions) and `selections` (exactly 3 objects). Object: `benchmark_id` (exact ID), `role` (whole_portfolio/dominant_sleeve/diversifier/liquidity_reference), `relationship` (why comparable), `limitation` (key mismatch), `mismatches` (currency/geography/style/size/duration/credit). Keep rationales short; no numeric claims in relationship/limitation; no numeric architecture labels (e.g. x86, 10-year); use qualitative wording. List mismatch only if clearly supported; same-industry/region/currency peers may have empty list. Don't force credit mismatch for equity unless directly relevant.</div>
+</div></details></article>
+
+<article id="p4">
+  <h2 class="pagetitle">Page 4</h2>
+  <h3 class="deckh">How the optimiser works</h3>
+  <p class="lede">Neither optimiser is doing anything mystical: write a candidate prompt, score it,
+  keep it if it is better. They differ in <em>when</em> the prompt is written, and in <em>what
+  counts as better</em>.</p>
+
+  <h2 class="sec">1. The loop</h2>
+  <p><b>Training set</b> &mdash; the cases the optimiser rewrites the instruction against.<br>
+  <b>Validation set</b> &mdash; ranks the survivors; this decides which prompt is best.<br>
+  <b>Test set</b> &mdash; never enters the search. It only produces the number we report.</p>
+  <p class="note">The optimiser only ever ranks on validation. If the test set were used for
+  ranking, the reported score would belong to the winner that same test set chose.</p>
+
+  <h2 class="sec">2. MIPROv2 &mdash; generate, rank cheaply, promote the survivors</h2>
+  <ol class="steps4">
+    <li><b>Generate</b> every candidate up front, before any scoring.</li>
+    <li><b>Score cheaply</b> &mdash; one random minibatch of the validation set per trial.</li>
+    <li><b>Rank by the average</b> of the noisy draws, not one lucky batch.</li>
+    <li><b>Promote</b> the leader to a full evaluation on the whole validation set, every six
+      trials, and feed that result back to the search.</li>
+    <li><b>Return</b> the program with the best full-evaluation score.</li>
+  </ol>
+  <p><b>Instruction candidates</b> are written by an LLM proposer guided by a dataset summary and a
+  random tip, once, up front. <b>Demo sets</b> are constructed: zero-shot, labelled-only,
+  bootstrapped, then shuffled bootstrapped sets with random sizes. The pairing is <b>searched</b>
+  by Optuna, not picked at random. The only purely random draw per trial is which validation cases
+  land in the minibatch. At <code>auto="light"</code> with demos enabled that is
+  <b>3 instructions &times; 6 demo sets = 18 combinations</b>.</p>
+  <p class="note">Minibatch mode only engages above <b>50 validation cases</b>. With our 3-case
+  valset, every MIPROv2 trial would already be a full evaluation.</p>
+
+  <h2 class="sec">Toy run &mdash; watch one candidate swing</h2>
+  <p>Twelve candidates, ten validation cases, three drawn per trial. Trial 2 and trial 4 are the
+  <b>same candidate on different batches</b>:</p>
+  <table class="ctab">
+    <tr><th>#</th><th>candidate</th><th>3 cases drawn from val</th><th>score</th></tr>
+    <tr data-at='1'><td class='tn'>1</td><td class='mono2'>I1+D0</td><td><i class='chip no'>c03 ✗</i> <i class='chip no'>c07 ✗</i> <i class='chip ok'>c09 ✓</i></td><td class='tn'>0.33</td></tr>
+<tr data-at='2'><td class='tn'>2</td><td class='mono2'>I4+D1</td><td><i class='chip no'>c01 ✗</i> <i class='chip no'>c04 ✗</i> <i class='chip ok'>c10 ✓</i></td><td class='tn'>0.33</td></tr>
+<tr data-at='3'><td class='tn'>3</td><td class='mono2'>I3+D2</td><td><i class='chip ok'>c02 ✓</i> <i class='chip ok'>c05 ✓</i> <i class='chip ok'>c08 ✓</i></td><td class='tn'>1.00</td></tr>
+<tr data-at='4'><td class='tn'>4</td><td class='mono2'>I3+D2</td><td><i class='chip no'>c03 ✗</i> <i class='chip no'>c06 ✗</i> <i class='chip ok'>c09 ✓</i></td><td class='tn'>0.33</td></tr>
+<tr data-at='5'><td class='tn'>5</td><td class='mono2'>I3+D1</td><td><i class='chip ok'>c02 ✓</i> <i class='chip no'>c04 ✗</i> <i class='chip ok'>c07 ✓</i></td><td class='tn'>0.67</td></tr>
+<tr data-at='6'><td class='tn'>6</td><td class='mono2'>I3+D1</td><td><i class='chip ok'>c03 ✓</i> <i class='chip ok'>c06 ✓</i> <i class='chip ok'>c08 ✓</i></td><td class='tn'>1.00</td></tr>
+<tr class='cprow' data-at='6'><td colspan='4'>checkpoint &mdash; the best average gets the <b>full ten-question exam</b>: I3+D1 scored <b>0.71</b>, and it is saved</td></tr>
+<tr data-at='7'><td class='tn'>7</td><td class='mono2'>I2+D2</td><td><i class='chip ok'>c01 ✓</i> <i class='chip no'>c05 ✗</i> <i class='chip ok'>c09 ✓</i></td><td class='tn'>0.67</td></tr>
+<tr data-at='8'><td class='tn'>8</td><td class='mono2'>I2+D2</td><td><i class='chip ok'>c04 ✓</i> <i class='chip no'>c07 ✗</i> <i class='chip ok'>c10 ✓</i></td><td class='tn'>0.67</td></tr>
+<tr data-at='9'><td class='tn'>9</td><td class='mono2'>I1+D0</td><td><i class='chip no'>c02 ✗</i> <i class='chip no'>c05 ✗</i> <i class='chip ok'>c08 ✓</i></td><td class='tn'>0.33</td></tr>
+<tr data-at='10'><td class='tn'>10</td><td class='mono2'>I4+D1</td><td><i class='chip ok'>c03 ✓</i> <i class='chip no'>c06 ✗</i> <i class='chip ok'>c09 ✓</i></td><td class='tn'>0.67</td></tr>
+<tr data-at='11'><td class='tn'>11</td><td class='mono2'>I2+D2</td><td><i class='chip ok'>c01 ✓</i> <i class='chip ok'>c04 ✓</i> <i class='chip ok'>c07 ✓</i></td><td class='tn'>1.00</td></tr>
+<tr data-at='12'><td class='tn'>12</td><td class='mono2'>I3+D2</td><td><i class='chip ok'>c02 ✓</i> <i class='chip no'>c05 ✗</i> <i class='chip ok'>c10 ✓</i></td><td class='tn'>0.67</td></tr>
+<tr class='cprow' data-at='12'><td colspan='4'>checkpoint &mdash; the best average gets the <b>full ten-question exam</b>: I2+D2 scored <b>0.84</b>, and it is saved</td></tr>
+  </table>
+  <p style="margin-top:12px">I3+D2 scores 1.00 in trial 2 and 0.33 in trial 4. Its average, 0.667,
+  ties it with I2+D2, so the cheap stage cannot separate them. The full evaluation can:</p>
+  <table class="ctab">
+    <tr><th>promoted candidate</th><th>full validation score</th></tr>
+    
+  </table>
+  <p class="note">I2+D2 wins at 0.90 after ranking equal second. The minibatch leader, I3+D1 at
+  0.833, lands mid-pack at 0.60. The cheap rank was a filter, never the answer.</p>
+
+  <h2 class="sec">3. GEPA &mdash; write, read, rewrite</h2>
+  <ol class="steps4">
+    <li><b>Sample a minibatch</b> (default 3 cases) and run the current candidate with trace capture.</li>
+    <li><b>Score it.</b> The metric returns a number <em>and a sentence</em>. That sentence is the
+      input to the next step, and it is why the metric has to say why.</li>
+    <li><b>Reflect.</b> A second model reads the failures and rewrites the instruction &mdash; a
+      targeted edit, not a paraphrase.</li>
+    <li><b>Accept on the Pareto frontier.</b> A child is kept if it beats its parent on
+      <em>any</em> case, not just on average.</li>
+  </ol>
+  <p>A plain average rewards a prompt that is mediocre everywhere. Per-case tracking keeps one that
+  is excellent on semiconductors and bad on utilities, because it may still contribute later. In our
+  run that produced a prompt which fixed three held-out cases and left seven untouched.</p>
+
+  <h2 class="sec">4. Side by side</h2>
+  <p><b>MIPROv2</b>: writes its candidates up front, Optuna scores the pairs, keeps the highest
+  average, selects from a fixed grid.<br>
+  <b>GEPA</b>: writes one instruction, reads the critique, writes the next one, and keeps a child
+  if it wins <em>anywhere</em> &mdash; a reflection search rather than a grid.</p>
+  <p class="note">Both return a new program and leave yours untouched. Both are bounded by the same
+  thing: the metric. Neither can add a fact the model does not have.</p>
+</article>
+</main>
+<footer>
+  Static build of the interactive deck. Same content, no script: collapsible sections use native
+  HTML details elements. Model deepseek/deepseek-flash, optimiser GEPA. Open in any browser; print
+  to PDF with Ctrl-P.
+</footer>
+</body></html>

@@ -1,0 +1,17 @@
+[project]
+name = "peerlens"
+version = "0.1.0"
+description = "A peer-labelling and prompt-comparison harness for benchmark selection"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+# The DSPy examples need the framework; nothing else in the repo does.
+dspy = ["dspy-ai>=3.5"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

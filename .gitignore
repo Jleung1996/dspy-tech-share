@@ -1,0 +1,33 @@
+# --- secrets -------------------------------------------------------------
+.env
+.env.local
+*.pem
+*.key
+
+# --- python --------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+
+# --- vendored dspy (installed separately; see README) --------------------
+.pydeps/
+
+# --- generated artefacts -------------------------------------------------
+# keep the published deck and the recorded results; ignore the machinery
+out/*.log
+out/*.csv
+out/*.json
+out/teaching/*.zip
+out/pages/*.zip
+.tmp/
+
+# --- the local skill pack (not part of this project) ---------------------
+skill-pack/
+skill-pack.zip
